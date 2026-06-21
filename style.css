@@ -157,19 +157,25 @@ html, body {
 
 .egg-img, .egg-svg {
   width: 100%; height: 100%; object-fit: contain;
-  transition: transform 0.09s ease, filter 0.09s ease;
-  animation: egg-idle 2.8s ease-in-out infinite;
+  transform-origin: center;
+  transition: transform 90ms ease, filter 90ms ease;
+  animation: egg-idle 2.5s ease-in-out infinite;
 }
 @keyframes egg-idle {
-  0%, 100% { filter: drop-shadow(0 14px 30px rgba(0,0,0,0.6)); }
-  50%      { filter: drop-shadow(0 14px 30px rgba(0,0,0,0.6))
-                     drop-shadow(0 0 16px rgba(120,255,40,0.45)) brightness(1.08); }
+  0%, 100% {
+    transform: scale(1);
+    filter: brightness(1) drop-shadow(0 14px 30px rgba(0,0,0,0.55));
+  }
+  50% {
+    transform: scale(1.015);
+    filter: brightness(1.08) drop-shadow(0 0 12px rgba(100,255,30,0.45))
+            drop-shadow(0 14px 30px rgba(0,0,0,0.55));
+  }
 }
-.egg-btn:hover .egg-img, .egg-btn:hover .egg-svg { transform: scale(1.03); }
 .egg-btn:active .egg-img, .egg-btn:active .egg-svg {
   animation: none;
   transform: scale(0.95) rotate(-1deg);
-  filter: brightness(1.45) drop-shadow(0 0 22px rgba(120,255,40,0.95));
+  filter: brightness(1.45) drop-shadow(0 0 18px rgba(120,255,30,0.95));
 }
 .egg-shadow { fill: rgba(0,0,0,0.5); }
 .lip { fill: #0a0f0a; stroke: var(--green-dim); stroke-width: 1.5; }
