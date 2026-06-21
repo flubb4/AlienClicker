@@ -124,11 +124,20 @@ html, body {
 
 .egg-img, .egg-svg {
   width: 100%; height: 100%; object-fit: contain;
-  filter: drop-shadow(0 12px 28px rgba(0,0,0,0.6));
-  transition: transform 0.08s ease;
+  transition: transform 0.09s ease, filter 0.09s ease;
+  animation: egg-idle 2.8s ease-in-out infinite;
 }
-.egg-btn:active .egg-img, .egg-btn:active .egg-svg { transform: scale(0.95); }
+@keyframes egg-idle {
+  0%, 100% { filter: drop-shadow(0 12px 28px rgba(0,0,0,0.55)); }
+  50%      { filter: drop-shadow(0 12px 28px rgba(0,0,0,0.55))
+                     drop-shadow(0 0 12px rgba(120,255,40,0.45)) brightness(1.07); }
+}
 .egg-btn:hover .egg-img, .egg-btn:hover .egg-svg { transform: scale(1.03); }
+.egg-btn:active .egg-img, .egg-btn:active .egg-svg {
+  animation: none;
+  transform: scale(0.95) rotate(-1deg);
+  filter: brightness(1.45) drop-shadow(0 0 18px rgba(120,255,40,0.95));
+}
 
 /* SVG-Fallback Details */
 .egg-glow { animation: breathe 3s ease-in-out infinite; }
