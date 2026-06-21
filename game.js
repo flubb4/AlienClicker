@@ -89,6 +89,10 @@ const el = {
   log: document.getElementById("log"),
   stats: document.getElementById("stats"),
   savedHint: document.getElementById("savedHint"),
+  colonyStage: document.getElementById("colonyStage"),
+  colonyFill: document.getElementById("colonyFill"),
+  infest: document.getElementById("infest"),
+  stageFlash: document.getElementById("stageFlash"),
 };
 
 /* ---------- System-Log ---------- */
@@ -125,6 +129,7 @@ el.eggBtn.addEventListener("click", (ev) => {
   state.totalBiomass += gain;
   state.totalClicks++;
   spawnFloat(ev.clientX, ev.clientY, "+" + fmt(gain));
+  if (window.__hiveAgitate) window.__hiveAgitate(ev.clientX, ev.clientY, 220);
   updateReadout();
 });
 
@@ -251,6 +256,57 @@ function renderStats() {
   `;
 }
 
+/* ---------- Kolonie-Status ---------- */
+
+const COLONY_STAGES = [
+  { name: "STERILE ZONE",    min: 0,    msg: "Anlage steril. Noch kein organisches Wachstum." },
+  { name: "INKUBATION",      min: 200,  msg: "Erste Eiablage stabil. Inkubation läuft." },
+  { name: "ERSTKONTAKT",     min: 3000, msg: "Wirt infiziert. Lebenszyklus eingeleitet." },
+  { name: "AUSBRUCH",        min: 4e4,  msg: "WARNUNG: Containment-Breach. Spezimen entkommen." },
+  { name: "INFESTATION",     min: 5e5,  msg: "Sektoren überrannt. Schwarm breitet sich aus." },
+  { name: "SCHWARM",         min: 6e6,  msg: "Vollständiger Schwarm aktiv. Crew verloren." },
+  { name: "KÖNIGINREICH",    min: 8e7,  msg: "Königin etabliert. Hive expandiert exponentiell." },
+  { name: "HIVE-DOMINANZ",   min: 2e9,  msg: "Kolonie dominiert die Anlage. Orbit-Sperre aktiv." },
+  { name: "APEX-PRÄDATOR",   min: 6e10, msg: "APEX erreicht. Die perfekte Spezies. Für die Firma." },
+];
+let lastStageIdx = -1;
+
+function renderColony() {
+  const b = Math.max(1, state.totalBiomass);
+  let idx = 0;
+  for (let i = 0; i < COLONY_STAGES.length; i++) if (b >= COLONY_STAGES[i].min) idx = i;
+  const cur = COLONY_STAGES[idx];
+  const next = COLONY_STAGES[idx + 1];
+
+  let pct = 100;
+  if (next) {
+    const lo = Math.log10(Math.max(1, cur.min || 1));
+    const hi = Math.log10(next.min);
+    pct = Math.max(0, Math.min(100, ((Math.log10(b) - lo) / (hi - lo)) * 100));
+  }
+  el.colonyStage.textContent = cur.name;
+  el.colonyFill.style.width = pct + "%";
+
+  // Umgebungs-Infestation skaliert mit dem Status
+  el.infest.style.opacity = (idx / (COLONY_STAGES.length - 1) * 0.55).toFixed(2);
+
+  // Aufstieg in neuen Status: Log + Aufblitzen
+  if (idx > lastStageIdx) {
+    if (lastStageIdx !== -1) {
+      logMsg(`KOLONIE-STATUS → ${cur.name}. ${cur.msg}`, true);
+      el.stageFlash.classList.remove("on");
+      void el.stageFlash.offsetWidth; // Reflow, damit die Animation neu startet
+      el.stageFlash.classList.add("on");
+    }
+    lastStageIdx = idx;
+  }
+}
+
+// Datenschnittstelle für hive.js (lebende Kolonie)
+window.colonyData = function () {
+  return { gens: state.gens, perSec: perSecond(), total: state.totalBiomass };
+};
+
 /* ---------- Game-Loop ---------- */
 
 let lastTick = Date.now();
@@ -267,6 +323,7 @@ function tick() {
 }
 setInterval(tick, 100);
 setInterval(renderStats, 500);
+setInterval(renderColony, 500);
 
 // Flavor-Log alle ~18s
 setInterval(() => {
@@ -360,3 +417,4 @@ renderShop();
 lastShopSignature = GENERATORS.map(g => state.gens[g.id]).join(",") + "|" + EQUIPMENT.map(e => state.equip[e.id] ? 1 : 0).join(",");
 updateReadout();
 renderStats();
+renderColony();

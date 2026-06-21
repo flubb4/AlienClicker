@@ -11,9 +11,12 @@
   <img class="bg-image" id="bgImage" src="assets/bg.png" alt="" draggable="false" onerror="this.remove()" />
   <div class="bg-glow"></div>
   <div class="bg-fog"></div>
+  <div class="infest" id="infest"></div>
+  <canvas id="hive"></canvas>
   <div class="scanlines"></div>
   <div class="vignette"></div>
   <div class="frame"></div>
+  <div class="stage-flash" id="stageFlash"></div>
 
   <!-- Slim Topbar -->
   <header class="topbar">
@@ -46,6 +49,13 @@
       <div class="biomass-amount" id="biomass">0</div>
       <div class="biomass-label">BIOMASSE-EINHEITEN</div>
       <div class="rate-chip" id="rate">0 / SEK</div>
+      <div class="colony">
+        <div class="colony-head">
+          <span class="colony-label">KOLONIE-STATUS</span>
+          <span class="colony-stage" id="colonyStage">STERILE ZONE</span>
+        </div>
+        <div class="colony-bar"><span id="colonyFill"></span></div>
+      </div>
     </div>
 
     <button class="egg-btn" id="eggBtn" aria-label="Ovomorph ernten">
@@ -89,5 +99,6 @@
   </aside>
 
   <script src="game.js"></script>
+  <script src="hive.js"></script>
 </body>
 </html>
