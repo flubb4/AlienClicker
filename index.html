@@ -7,87 +7,86 @@
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
-  <div class="crt">
-    <div class="scanlines"></div>
+  <div class="scanlines"></div>
+  <div class="vignette"></div>
 
-    <header class="topbar">
-      <div class="brand">
+  <!-- Slim Topbar -->
+  <header class="topbar">
+    <div class="brand">
+      <span class="logo">◢◤</span>
+      <div class="brand-text">
         <span class="wy">WEYLAND-YUTANI</span>
-        <span class="dept">BIOWEAPONS DIVISION // SPECIMEN HARVESTER v2.1</span>
+        <span class="dept">BIO-SPECIMEN HARVESTER v2.1</span>
       </div>
-      <div class="status">
-        <span class="dot"></span> SYS-LINK: <b>ONLINE</b>
-      </div>
-    </header>
+    </div>
+    <div class="status"><span class="dot"></span> SYS-LINK <b>ONLINE</b></div>
+  </header>
 
-    <main class="layout">
-      <!-- Linke Spalte: Ernte -->
-      <section class="panel harvest">
-        <h2 class="panel-title">// PROBEN-ENTNAHME</h2>
+  <!-- Linkes schwebendes Panel: Log + Stats -->
+  <aside class="panel side-left">
+    <h2 class="panel-title">System-Log</h2>
+    <div class="log" id="log"></div>
+    <h2 class="panel-title">Statistik</h2>
+    <div class="stats" id="stats"></div>
+    <div class="controls">
+      <button class="ctl" id="saveBtn">Speichern</button>
+      <button class="ctl danger" id="resetBtn">Purge</button>
+    </div>
+    <div class="saved-hint" id="savedHint"></div>
+  </aside>
 
-        <div class="readout">
-          <div class="biomass-amount" id="biomass">0</div>
-          <div class="biomass-label">BIOMASSE-EINHEITEN</div>
-          <div class="rate" id="rate">0 / SEK</div>
-        </div>
+  <!-- ZENTRUM: Probenentnahme -->
+  <main class="harvest">
+    <div class="readout">
+      <div class="biomass-amount" id="biomass">0</div>
+      <div class="biomass-label">BIOMASSE-EINHEITEN</div>
+      <div class="rate-chip" id="rate">0 / SEK</div>
+    </div>
 
-        <div class="egg-stage">
-          <button class="egg-btn" id="eggBtn" aria-label="Ovomorph ernten">
-            <svg viewBox="0 0 200 240" class="egg-svg" xmlns="http://www.w3.org/2000/svg">
-              <defs>
-                <radialGradient id="eggBody" cx="50%" cy="38%" r="70%">
-                  <stop offset="0%" stop-color="#3a4a3a"/>
-                  <stop offset="55%" stop-color="#1d271d"/>
-                  <stop offset="100%" stop-color="#0a0f0a"/>
-                </radialGradient>
-                <radialGradient id="eggGlow" cx="50%" cy="50%" r="60%">
-                  <stop offset="0%" stop-color="#7dff9b"/>
-                  <stop offset="100%" stop-color="rgba(125,255,155,0)"/>
-                </radialGradient>
-              </defs>
-              <ellipse class="egg-shadow" cx="100" cy="225" rx="62" ry="12"/>
-              <path class="egg-glow" d="M100 30 C150 30 168 90 168 140 C168 200 140 220 100 220 C60 220 32 200 32 140 C32 90 50 30 100 30 Z" fill="url(#eggGlow)"/>
-              <path class="egg-shell" d="M100 22 C152 22 172 90 172 142 C172 204 142 226 100 226 C58 226 28 204 28 142 C28 90 48 22 100 22 Z" fill="url(#eggBody)" stroke="#4f6b4f" stroke-width="2"/>
-              <g class="egg-lips">
-                <path class="lip" d="M100 40 C112 70 112 95 100 110 C88 95 88 70 100 40 Z"/>
-                <path class="lip" d="M100 40 C88 70 70 88 60 96 C82 92 96 80 100 110 Z" opacity="0.0"/>
-                <path class="lip" d="M70 52 C90 72 95 90 100 110 C80 100 65 84 58 64 Z"/>
-                <path class="lip" d="M130 52 C110 72 105 90 100 110 C120 100 135 84 142 64 Z"/>
-              </g>
-              <circle class="egg-core" cx="100" cy="78" r="14"/>
-            </svg>
-          </button>
-          <div class="egg-hint">[ KLICKEN ZUM ENTNEHMEN ]</div>
-          <div class="click-power">PRO ENTNAHME: <b id="clickPower">1</b></div>
-        </div>
-      </section>
+    <button class="egg-btn" id="eggBtn" aria-label="Ovomorph ernten">
+      <span class="egg-aura"></span>
+      <span class="egg-ring"></span>
+      <img class="egg-img" id="eggImg" src="assets/egg.png" alt=""
+           onerror="this.remove(); var s=document.getElementById('eggSvg'); if(s) s.style.display='block';" />
+      <svg id="eggSvg" viewBox="0 0 200 240" class="egg-svg" xmlns="http://www.w3.org/2000/svg" style="display:none">
+        <defs>
+          <radialGradient id="eggBody" cx="50%" cy="38%" r="70%">
+            <stop offset="0%" stop-color="#3a4a3a"/>
+            <stop offset="55%" stop-color="#1d271d"/>
+            <stop offset="100%" stop-color="#0a0f0a"/>
+          </radialGradient>
+          <radialGradient id="eggGlow" cx="50%" cy="50%" r="60%">
+            <stop offset="0%" stop-color="#7dff9b"/>
+            <stop offset="100%" stop-color="rgba(125,255,155,0)"/>
+          </radialGradient>
+        </defs>
+        <ellipse class="egg-shadow" cx="100" cy="225" rx="62" ry="12"/>
+        <path class="egg-glow" d="M100 30 C150 30 168 90 168 140 C168 200 140 220 100 220 C60 220 32 200 32 140 C32 90 50 30 100 30 Z" fill="url(#eggGlow)"/>
+        <path class="egg-shell" d="M100 22 C152 22 172 90 172 142 C172 204 142 226 100 226 C58 226 28 204 28 142 C28 90 48 22 100 22 Z" fill="url(#eggBody)" stroke="#4f6b4f" stroke-width="2"/>
+        <g class="egg-lips">
+          <path class="lip" d="M100 40 C112 70 112 95 100 110 C88 95 88 70 100 40 Z"/>
+          <path class="lip" d="M70 52 C90 72 95 90 100 110 C80 100 65 84 58 64 Z"/>
+          <path class="lip" d="M130 52 C110 72 105 90 100 110 C120 100 135 84 142 64 Z"/>
+        </g>
+        <circle class="egg-core" cx="100" cy="78" r="14"/>
+      </svg>
+    </button>
 
-      <!-- Mittlere Spalte: Shop -->
-      <section class="panel shop">
-        <div class="tabs">
-          <button class="tab active" data-tab="gen">SPEZIMEN</button>
-          <button class="tab" data-tab="equip">AUSRÜSTUNG</button>
-        </div>
-        <div class="tab-body" id="genList"></div>
-        <div class="tab-body hidden" id="equipList"></div>
-      </section>
+    <div class="egg-meta">
+      <span class="egg-hint">▼ ANTIPPEN ZUM ENTNEHMEN ▼</span>
+      <span class="click-power">PRO ENTNAHME · <b id="clickPower">1</b></span>
+    </div>
+  </main>
 
-      <!-- Rechte Spalte: Log + Stats -->
-      <section class="panel side">
-        <h2 class="panel-title">// SYSTEM-LOG</h2>
-        <div class="log" id="log"></div>
-
-        <h2 class="panel-title">// STATISTIK</h2>
-        <div class="stats" id="stats"></div>
-
-        <div class="controls">
-          <button class="ctl" id="saveBtn">SPEICHERN</button>
-          <button class="ctl danger" id="resetBtn">PURGE</button>
-        </div>
-        <div class="saved-hint" id="savedHint"></div>
-      </section>
-    </main>
-  </div>
+  <!-- Rechtes schwebendes Panel: Shop -->
+  <aside class="panel side-right">
+    <div class="tabs">
+      <button class="tab active" data-tab="gen">Spezimen</button>
+      <button class="tab" data-tab="equip">Ausrüstung</button>
+    </div>
+    <div class="tab-body" id="genList"></div>
+    <div class="tab-body hidden" id="equipList"></div>
+  </aside>
 
   <script src="game.js"></script>
 </body>
