@@ -22,13 +22,19 @@ html, body {
   color: var(--green);
   background-color: var(--bg);
   overflow-x: hidden;
+  user-select: none;            /* kein Text-/Bild-Markieren beim Ziehen */
+  -webkit-user-select: none;
 }
+
+/* Bilder nicht ziehbar (kein Drag-Geistbild / Durchgestrichen-Cursor) */
+img { -webkit-user-drag: none; user-select: none; }
 
 /* ===== Hintergrund-Ebenen ===== */
 .bg-image {
   position: fixed; inset: 0; width: 100%; height: 100%;
   object-fit: cover; z-index: -3; opacity: 0.92;
   filter: brightness(0.78) saturate(1.15) contrast(1.05);
+  pointer-events: none;
 }
 /* Sanfter Glow hinter dem Ei + leichtes Abdunkeln oben.
    Bei fehlendem bg.png dient das zugleich als Fallback-Atmosphäre. */
@@ -160,6 +166,8 @@ html, body {
   transform-origin: center;
   transition: transform 90ms ease, filter 90ms ease;
   animation: egg-idle 2.5s ease-in-out infinite;
+  pointer-events: none;          /* Klicks gehen an den Button, kein Bild-Drag */
+  -webkit-user-drag: none;
 }
 @keyframes egg-idle {
   0%, 100% {

@@ -8,7 +8,7 @@
 </head>
 <body>
   <!-- Hintergrund-Ebenen -->
-  <img class="bg-image" id="bgImage" src="assets/bg.png" alt="" onerror="this.remove()" />
+  <img class="bg-image" id="bgImage" src="assets/bg.png" alt="" draggable="false" onerror="this.remove()" />
   <div class="bg-glow"></div>
   <div class="bg-fog"></div>
   <div class="scanlines"></div>
@@ -52,7 +52,7 @@
       <span class="egg-mist"></span>
       <span class="egg-halo"></span>
       <span class="egg-aura"></span>
-      <img class="egg-img" id="eggImg" src="assets/egg.png" alt=""
+      <img class="egg-img" id="eggImg" src="assets/egg.png" alt="" draggable="false"
            onerror="this.remove(); var s=document.getElementById('eggSvg'); if(s) s.style.display='block';" />
       <svg id="eggSvg" viewBox="0 0 200 240" class="egg-svg" xmlns="http://www.w3.org/2000/svg" style="display:none">
         <defs>
