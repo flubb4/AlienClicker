@@ -7,8 +7,13 @@
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
+  <!-- Hintergrund-Ebenen -->
+  <img class="bg-image" id="bgImage" src="assets/bg.png" alt="" onerror="this.remove()" />
+  <div class="bg-glow"></div>
+  <div class="bg-fog"></div>
   <div class="scanlines"></div>
   <div class="vignette"></div>
+  <div class="frame"></div>
 
   <!-- Slim Topbar -->
   <header class="topbar">
@@ -22,7 +27,7 @@
     <div class="status"><span class="dot"></span> SYS-LINK <b>ONLINE</b></div>
   </header>
 
-  <!-- Linkes schwebendes Panel: Log + Stats -->
+  <!-- Linkes Panel: Log + Stats -->
   <aside class="panel side-left">
     <h2 class="panel-title">System-Log</h2>
     <div class="log" id="log"></div>
@@ -44,8 +49,9 @@
     </div>
 
     <button class="egg-btn" id="eggBtn" aria-label="Ovomorph ernten">
+      <span class="egg-mist"></span>
+      <span class="egg-halo"></span>
       <span class="egg-aura"></span>
-      <span class="egg-ring"></span>
       <img class="egg-img" id="eggImg" src="assets/egg.png" alt=""
            onerror="this.remove(); var s=document.getElementById('eggSvg'); if(s) s.style.display='block';" />
       <svg id="eggSvg" viewBox="0 0 200 240" class="egg-svg" xmlns="http://www.w3.org/2000/svg" style="display:none">
@@ -55,20 +61,14 @@
             <stop offset="55%" stop-color="#1d271d"/>
             <stop offset="100%" stop-color="#0a0f0a"/>
           </radialGradient>
-          <radialGradient id="eggGlow" cx="50%" cy="50%" r="60%">
-            <stop offset="0%" stop-color="#7dff9b"/>
-            <stop offset="100%" stop-color="rgba(125,255,155,0)"/>
-          </radialGradient>
         </defs>
         <ellipse class="egg-shadow" cx="100" cy="225" rx="62" ry="12"/>
-        <path class="egg-glow" d="M100 30 C150 30 168 90 168 140 C168 200 140 220 100 220 C60 220 32 200 32 140 C32 90 50 30 100 30 Z" fill="url(#eggGlow)"/>
         <path class="egg-shell" d="M100 22 C152 22 172 90 172 142 C172 204 142 226 100 226 C58 226 28 204 28 142 C28 90 48 22 100 22 Z" fill="url(#eggBody)" stroke="#4f6b4f" stroke-width="2"/>
         <g class="egg-lips">
           <path class="lip" d="M100 40 C112 70 112 95 100 110 C88 95 88 70 100 40 Z"/>
           <path class="lip" d="M70 52 C90 72 95 90 100 110 C80 100 65 84 58 64 Z"/>
           <path class="lip" d="M130 52 C110 72 105 90 100 110 C120 100 135 84 142 64 Z"/>
         </g>
-        <circle class="egg-core" cx="100" cy="78" r="14"/>
       </svg>
     </button>
 
@@ -78,7 +78,7 @@
     </div>
   </main>
 
-  <!-- Rechtes schwebendes Panel: Shop -->
+  <!-- Rechtes Panel: Shop -->
   <aside class="panel side-right">
     <div class="tabs">
       <button class="tab active" data-tab="gen">Spezimen</button>

@@ -10,26 +10,26 @@
 // Auto-Produzenten: der Xenomorph-Lebenszyklus.
 // baseCost = Startpreis, rate = Biomasse/Sek pro Einheit.
 const GENERATORS = [
-  { id: "facehugger", name: "Facehugger",            baseCost: 15,      rate: 0.1,     desc: "Klammert sich an Wirte. Sammelt passiv Biomasse." },
-  { id: "burster",    name: "Chestburster",          baseCost: 110,     rate: 1,       desc: "Frisch geschlüpft. Wächst rasend schnell." },
-  { id: "drone",      name: "Xenomorph-Drohne",      baseCost: 1200,    rate: 8,       desc: "Arbeiterkaste des Schwarms." },
-  { id: "warrior",    name: "Xenomorph-Krieger",     baseCost: 13000,   rate: 47,      desc: "Aggressive Beschützer der Brut." },
-  { id: "praetorian", name: "Praetorianer",          baseCost: 140000,  rate: 260,     desc: "Elite-Wache der Königin." },
-  { id: "queen",      name: "Xenomorph-Königin",     baseCost: 1.6e6,   rate: 1400,    desc: "Legt Eier am laufenden Band." },
-  { id: "hive",       name: "Hive-Cluster",          baseCost: 2.1e7,   rate: 7800,    desc: "Ganzer Nestkomplex aus Harz." },
-  { id: "derelict",   name: "Derelict-Frachter",     baseCost: 3.3e8,   rate: 44000,   desc: "Abgestürztes Ei-Silo der Space Jockeys." },
-  { id: "lv426",      name: "Kolonie LV-426",        baseCost: 5.1e9,   rate: 260000,  desc: "Hadley's Hope. Vollständig infiziert." },
-  { id: "wy",         name: "W-Y Biowaffen-Sparte",  baseCost: 7.5e10,  rate: 1.6e6,   desc: "Industrielle Massenproduktion. Für die Firma." },
+  { id: "facehugger", name: "Facehugger",            baseCost: 15,      rate: 0.1,     icon: "🕷️", desc: "Klammert sich an Wirte. Sammelt passiv Biomasse." },
+  { id: "burster",    name: "Chestburster",          baseCost: 110,     rate: 1,       icon: "🐛", desc: "Frisch geschlüpft. Wächst rasend schnell." },
+  { id: "drone",      name: "Xenomorph-Drohne",      baseCost: 1200,    rate: 8,       icon: "👽", desc: "Arbeiterkaste des Schwarms." },
+  { id: "warrior",    name: "Xenomorph-Krieger",     baseCost: 13000,   rate: 47,      icon: "👾", desc: "Aggressive Beschützer der Brut." },
+  { id: "praetorian", name: "Praetorianer",          baseCost: 140000,  rate: 260,     icon: "🦖", desc: "Elite-Wache der Königin." },
+  { id: "queen",      name: "Xenomorph-Königin",     baseCost: 1.6e6,   rate: 1400,    icon: "👑", desc: "Legt Eier am laufenden Band." },
+  { id: "hive",       name: "Hive-Cluster",          baseCost: 2.1e7,   rate: 7800,    icon: "🪺", desc: "Ganzer Nestkomplex aus Harz." },
+  { id: "derelict",   name: "Derelict-Frachter",     baseCost: 3.3e8,   rate: 44000,   icon: "🛸", desc: "Abgestürztes Ei-Silo der Space Jockeys." },
+  { id: "lv426",      name: "Kolonie LV-426",        baseCost: 5.1e9,   rate: 260000,  icon: "🪐", desc: "Hadley's Hope. Vollständig infiziert." },
+  { id: "wy",         name: "W-Y Biowaffen-Sparte",  baseCost: 7.5e10,  rate: 1.6e6,   icon: "🏢", desc: "Industrielle Massenproduktion. Für die Firma." },
 ];
 
 // Ausrüstung: einmalige Käufe, multiplizieren die Klickkraft.
 const EQUIPMENT = [
-  { id: "prod",    name: "Viehtreiber-Stab",       cost: 120,    mult: 2, desc: "Verdoppelt die Entnahme pro Klick." },
-  { id: "tracker", name: "Bewegungsmelder M314",   cost: 2500,   mult: 2, desc: "Präzisere Entnahme. x2 Klickkraft." },
-  { id: "pulse",   name: "M41A Pulsgewehr",        cost: 60000,  mult: 2, desc: "10mm explosiv. x2 Klickkraft." },
-  { id: "loader",  name: "P-5000 Power-Loader",    cost: 1.2e6,  mult: 3, desc: "\"Get away from her, you bitch!\" x3 Klickkraft." },
-  { id: "flamer",  name: "M240 Flammenwerfer",     cost: 3e7,    mult: 3, desc: "Nur sicher aus dem Orbit. x3 Klickkraft." },
-  { id: "sentry",  name: "UA 571-C Geschützturm",  cost: 7e8,    mult: 4, desc: "Automatisierte Entnahme-Salven. x4 Klickkraft." },
+  { id: "prod",    name: "Viehtreiber-Stab",       cost: 120,    mult: 2, icon: "⚡", desc: "Verdoppelt die Entnahme pro Klick." },
+  { id: "tracker", name: "Bewegungsmelder M314",   cost: 2500,   mult: 2, icon: "📡", desc: "Präzisere Entnahme. x2 Klickkraft." },
+  { id: "pulse",   name: "M41A Pulsgewehr",        cost: 60000,  mult: 2, icon: "🔫", desc: "10mm explosiv. x2 Klickkraft." },
+  { id: "loader",  name: "P-5000 Power-Loader",    cost: 1.2e6,  mult: 3, icon: "🤖", desc: "\"Get away from her, you bitch!\" x3 Klickkraft." },
+  { id: "flamer",  name: "M240 Flammenwerfer",     cost: 3e7,    mult: 3, icon: "🔥", desc: "Nur sicher aus dem Orbit. x3 Klickkraft." },
+  { id: "sentry",  name: "UA 571-C Geschützturm",  cost: 7e8,    mult: 4, icon: "🎯", desc: "Automatisierte Entnahme-Salven. x4 Klickkraft." },
 ];
 
 const SAVE_KEY = "alienclicker-save-v1";
@@ -172,8 +172,11 @@ function renderShop() {
     const item = document.createElement("div");
     item.className = "item" + (affordable ? "" : " locked");
     item.innerHTML = `
-      <div class="item-name">${g.name}<span class="count">×${state.gens[g.id]}</span></div>
-      <div class="item-rate">${fmt(g.rate)}/s pro Einheit · ${g.desc}</div>
+      <div class="thumb"><span class="thumb-fallback">${g.icon}</span><img src="assets/spec/${g.id}.png" alt="" onerror="this.remove()"></div>
+      <div class="item-info">
+        <div class="item-name">${g.name}<span class="count">×${state.gens[g.id]}</span></div>
+        <div class="item-rate">${fmt(g.rate)}/s pro Einheit · ${g.desc}</div>
+      </div>
       <div class="item-cost"><span class="cost-val">${fmt(cost)}</span><span class="cost-lbl">BIOMASSE</span></div>
     `;
     item.addEventListener("click", () => buyGen(g));
@@ -188,8 +191,11 @@ function renderShop() {
     const item = document.createElement("div");
     item.className = "item" + (bought ? " maxed" : affordable ? "" : " locked");
     item.innerHTML = `
-      <div class="item-name">${e.name}${bought ? ' <span class="count">[INSTALLIERT]</span>' : ""}</div>
-      <div class="item-desc">${e.desc}</div>
+      <div class="thumb"><span class="thumb-fallback">${e.icon}</span><img src="assets/equip/${e.id}.png" alt="" onerror="this.remove()"></div>
+      <div class="item-info">
+        <div class="item-name">${e.name}${bought ? ' <span class="count">[INSTALLIERT]</span>' : ""}</div>
+        <div class="item-desc">${e.desc}</div>
+      </div>
       <div class="item-cost">${bought ? '<span class="cost-val">✓</span>' : `<span class="cost-val">${fmt(e.cost)}</span><span class="cost-lbl">BIOMASSE</span>`}</div>
     `;
     if (!bought) item.addEventListener("click", () => buyEquip(e));
