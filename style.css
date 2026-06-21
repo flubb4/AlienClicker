@@ -105,7 +105,7 @@ html, body {
 /* Ei-Button + Aura */
 .egg-btn {
   position: relative; background: none; border: none; cursor: pointer;
-  width: clamp(220px, 42vw, 320px); height: clamp(220px, 42vw, 320px);
+  width: clamp(280px, 50vw, 420px); height: clamp(280px, 50vw, 420px);
   display: grid; place-items: center; outline: none;
 }
 .egg-aura {
@@ -123,8 +123,8 @@ html, body {
 @keyframes spin { to { transform: rotate(360deg); } }
 
 .egg-img, .egg-svg {
-  width: 86%; height: 86%; object-fit: contain;
-  filter: drop-shadow(0 12px 24px rgba(0,0,0,0.6));
+  width: 100%; height: 100%; object-fit: contain;
+  filter: drop-shadow(0 12px 28px rgba(0,0,0,0.6));
   transition: transform 0.08s ease;
 }
 .egg-btn:active .egg-img, .egg-btn:active .egg-svg { transform: scale(0.95); }
