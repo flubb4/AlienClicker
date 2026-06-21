@@ -27,17 +27,16 @@ html, body {
 /* ===== Hintergrund-Ebenen ===== */
 .bg-image {
   position: fixed; inset: 0; width: 100%; height: 100%;
-  object-fit: cover; z-index: -3; opacity: 0.55;
-  filter: brightness(0.6) saturate(1.1) hue-rotate(-8deg);
+  object-fit: cover; z-index: -3; opacity: 0.92;
+  filter: brightness(0.78) saturate(1.15) contrast(1.05);
 }
-/* CSS-Fallback, falls kein bg.png da ist: tiefes Biomech-Dunkelgrün */
+/* Sanfter Glow hinter dem Ei + leichtes Abdunkeln oben.
+   Bei fehlendem bg.png dient das zugleich als Fallback-Atmosphäre. */
 .bg-glow {
   position: fixed; inset: 0; z-index: -2; pointer-events: none;
   background:
-    radial-gradient(60% 50% at 50% 62%, rgba(43, 212, 90, 0.28), transparent 70%),
-    radial-gradient(90% 70% at 50% 120%, rgba(43, 212, 90, 0.22), transparent 65%),
-    radial-gradient(120% 90% at 50% -10%, rgba(10, 30, 18, 0.6), transparent 60%),
-    linear-gradient(180deg, #02060400, #020a06 75%, #010503);
+    radial-gradient(46% 42% at 50% 56%, rgba(43, 212, 90, 0.22), transparent 70%),
+    radial-gradient(120% 80% at 50% -15%, rgba(2, 8, 5, 0.7), transparent 55%);
   animation: bgpulse 7s ease-in-out infinite;
 }
 @keyframes bgpulse { 0%,100%{opacity:0.85;} 50%{opacity:1;} }
@@ -55,7 +54,7 @@ html, body {
 }
 .vignette {
   pointer-events: none; position: fixed; inset: 0; z-index: 899;
-  box-shadow: inset 0 0 260px 60px rgba(0,0,0,0.92);
+  box-shadow: inset 0 0 180px 10px rgba(0,0,0,0.7);
 }
 /* HUD-Rahmen */
 .frame {
