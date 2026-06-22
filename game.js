@@ -200,17 +200,15 @@ function renderDeck() {
       }
     });
 
-    // Terminal-Hotspot in der Brücke (Klick-Ziel)
-    if (room.id === "bridge") {
-      const term = document.createElement("button");
-      term.className = "terminal";
-      term.setAttribute("aria-label", "Terminal bedienen");
-      term.innerHTML = `<span class="term-screen"></span>`;
-      zone.appendChild(term);
-    }
-
     el.deck.appendChild(zone);
   });
+
+  // Zentrales Terminal (Klick-Ziel) in der Schiffsmitte
+  const term = document.createElement("button");
+  term.className = "terminal";
+  term.setAttribute("aria-label", "Terminal bedienen");
+  term.innerHTML = `<span class="term-screen"></span><span class="term-label">TERMINAL</span>`;
+  el.deck.appendChild(term);
 }
 
 /* ---------- Shop ---------- */

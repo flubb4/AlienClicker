@@ -135,28 +135,48 @@ img { -webkit-user-drag: none; user-select: none; }
 .runner.noimg::before { content: ""; position: absolute; top: 0; left: 50%; transform: translateX(-50%); width: 11px; height: 11px; border-radius: 50%; background: radial-gradient(circle at 40% 35%, #d6ffe2, #2bd45a); box-shadow: 0 0 8px rgba(109,255,143,0.7); }
 .runner.noimg::after { content: ""; position: absolute; top: 10px; left: 50%; transform: translateX(-50%); width: 13px; height: 22px; border-radius: 7px 7px 4px 4px; background: linear-gradient(180deg, #3a8a55, #14331f); box-shadow: 0 0 8px rgba(43,212,90,0.45); }
 
-/* Brücken-Terminal (Klick-Ziel) */
+/* Zentrales Terminal (Klick-Ziel in der Schiffsmitte) */
 .terminal {
-  position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
-  width: 30px; height: 30px; padding: 0; background: none; border: none; cursor: pointer; outline: none;
+  position: absolute; top: 47%; left: 50%; transform: translate(-50%, -50%);
+  width: calc(var(--charh, 64px) * 0.95); height: calc(var(--charh, 64px) * 0.95);
+  padding: 0; background: none; border: none; cursor: pointer; outline: none;
   pointer-events: auto; display: grid; place-items: center;
 }
+.terminal::before { /* Glow-Scheibe */
+  content: ""; position: absolute; inset: -24%; border-radius: 50%;
+  background: radial-gradient(circle, rgba(109,255,143,0.30), transparent 70%);
+}
 .terminal::after { /* Aufmerksamkeits-Pulsring */
-  content: ""; position: absolute; inset: -6px; border-radius: 50%;
-  border: 2px solid rgba(109,255,143,0.7); animation: termpulse 1.8s ease-out infinite;
+  content: ""; position: absolute; inset: -8%; border-radius: 50%;
+  border: 2px solid rgba(109,255,143,0.55); animation: termpulse 1.9s ease-out infinite;
 }
 .term-screen {
-  width: 22px; height: 16px; border-radius: 3px; display: block;
-  background: linear-gradient(160deg, rgba(109,255,143,0.95), rgba(43,212,90,0.45));
-  border: 1.5px solid rgba(125,255,155,0.7); box-shadow: 0 0 14px rgba(109,255,143,0.8);
-  animation: termflicker 3s ease-in-out infinite;
+  position: relative; width: 66%; height: 66%; border-radius: 16%; overflow: hidden;
+  display: grid; place-items: center; transition: transform 0.09s ease;
+  background: linear-gradient(155deg, rgba(22,52,34,0.96), rgba(7,18,12,0.96));
+  border: 2px solid rgba(125,255,155,0.75);
+  box-shadow: 0 0 22px rgba(109,255,143,0.55), inset 0 0 16px rgba(43,212,90,0.45);
 }
-@keyframes termflicker { 0%,100%{filter:brightness(1);} 50%{filter:brightness(1.3);} }
-@keyframes termpulse { 0%{transform:scale(0.7);opacity:0.8;} 100%{transform:scale(1.8);opacity:0;} }
-.terminal:hover .term-screen { transform: scale(1.12); }
-.terminal:active .term-screen { transform: scale(0.9); }
+.term-screen::before { /* Scanlines */
+  content: ""; position: absolute; inset: 0;
+  background: repeating-linear-gradient(0deg, transparent 0 3px, rgba(109,255,143,0.12) 3px 4px);
+}
+.term-screen::after { /* blinkender Prompt */
+  content: ">_"; font-family: var(--mono); font-weight: 700; font-size: 1.1em;
+  color: var(--green-soft); text-shadow: 0 0 10px var(--green-soft);
+  animation: termcursor 1.1s steps(1) infinite;
+}
+.term-label {
+  position: absolute; top: 100%; left: 50%; transform: translateX(-50%); margin-top: 4px;
+  font-family: var(--mono); font-size: 9px; letter-spacing: 3px; color: var(--green-soft);
+  text-shadow: 0 0 8px rgba(109,255,143,0.6); white-space: nowrap; opacity: 0.85; pointer-events: none;
+}
+@keyframes termcursor { 50% { opacity: 0.25; } }
+@keyframes termpulse { 0%{transform:scale(0.72);opacity:0.75;} 100%{transform:scale(1.7);opacity:0;} }
+.terminal:hover .term-screen { transform: scale(1.1); }
+.terminal:active .term-screen { transform: scale(0.92); }
 .terminal.ping { animation: termping 0.4s ease-out; }
-@keyframes termping { 0%{transform:translate(-50%,-50%) scale(0.85);} 100%{transform:translate(-50%,-50%) scale(1);} }
+@keyframes termping { 0%{transform:translate(-50%,-50%) scale(0.88);} 100%{transform:translate(-50%,-50%) scale(1);} }
 
 /* Floating Klick-Feedback */
 .float-num { position: fixed; pointer-events: none; z-index: 1000; font-family: var(--mono); font-weight: 700; font-size: 18px; color: var(--green-soft); text-shadow: 0 0 12px var(--green-soft); animation: floatup 0.9s ease-out forwards; }
