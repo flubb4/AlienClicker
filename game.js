@@ -23,12 +23,12 @@ const CREW = [
 // Räume des Deckplans. box = Lauf-Zone in % des Schiff-Bildes (l=links, t=oben, w=breite, h=höhe).
 // Werte sind Schätzungen und werden am echten Bild feinjustiert.
 const ROOMS = [
-  { id: "bridge",  label: "BRÜCKE",         box: { l: 24, t: 7,  w: 52, h: 16 } },
-  { id: "medbay",  label: "KRANKENSTATION", box: { l: 9,  t: 26, w: 33, h: 19 } },
-  { id: "food",    label: "FOOD STORAGE",   box: { l: 58, t: 26, w: 33, h: 19 } },
-  { id: "muthur",  label: "MUTHUR",         box: { l: 9,  t: 48, w: 33, h: 20 } },
-  { id: "android", label: "ANDROID BAY",    box: { l: 58, t: 48, w: 33, h: 20 } },
-  { id: "engine",  label: "ENGINE ROOM",    box: { l: 14, t: 73, w: 72, h: 18 } },
+  { id: "bridge",  label: "BRÜCKE",         box: { l: 20, t: 10, w: 60, h: 13 } },
+  { id: "medbay",  label: "KRANKENSTATION", box: { l: 10, t: 28, w: 31, h: 15 } },
+  { id: "food",    label: "FOOD STORAGE",   box: { l: 58, t: 28, w: 31, h: 15 } },
+  { id: "muthur",  label: "MUTHUR",         box: { l: 10, t: 50, w: 30, h: 16 } },
+  { id: "android", label: "ANDROID BAY",    box: { l: 58, t: 50, w: 31, h: 16 } },
+  { id: "engine",  label: "ENGINE ROOM",    box: { l: 16, t: 74, w: 68, h: 15 } },
 ];
 
 // Systeme = einmalige Käufe, vervielfachen den Credit-Ertrag pro Klick.
