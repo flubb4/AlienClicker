@@ -409,6 +409,56 @@ document.querySelectorAll(".tab").forEach(tab => {
 // Daten für ship.js
 window.crewData = function () { return { crew: state.crew }; };
 
+/* ---------- Admin-Mode (Strg+Shift+A) ---------- */
+
+function setupAdmin() {
+  const panel = document.createElement("div");
+  panel.id = "admin";
+  panel.className = "admin hidden";
+  panel.innerHTML = `
+    <div class="admin-title">⚙ ADMIN-MODUS</div>
+    <div class="admin-row">
+      <button data-add="1000">+1K</button>
+      <button data-add="100000">+100K</button>
+      <button data-add="1000000">+1M</button>
+      <button data-add="1000000000">+1B</button>
+      <button data-add="1000000000000">+1T</button>
+    </div>
+    <div class="admin-row">
+      <button id="admCrew">Alle Crew +5</button>
+      <button id="admModules">Alle Systeme</button>
+      <button id="admDebt">+10% Tilgung</button>
+    </div>
+    <div class="admin-hint">Strg+Shift+A zum Ein-/Ausblenden</div>
+  `;
+  document.body.appendChild(panel);
+
+  panel.addEventListener("click", (e) => {
+    const add = e.target.dataset && e.target.dataset.add;
+    if (add) { state.credits += Number(add); updateReadout(); }
+  });
+  panel.querySelector("#admCrew").addEventListener("click", () => {
+    CREW.forEach(c => state.crew[c.id] += 5);
+    renderDeck(); renderShop(); updateReadout();
+  });
+  panel.querySelector("#admModules").addEventListener("click", () => {
+    MODULES.forEach(m => state.modules[m.id] = true);
+    renderShop(); updateReadout();
+  });
+  panel.querySelector("#admDebt").addEventListener("click", () => {
+    state.totalEarned += DEBT_TOTAL * 0.1; updateReadout(); renderDebt();
+  });
+
+  window.addEventListener("keydown", (e) => {
+    if (e.ctrlKey && e.shiftKey && (e.key === "A" || e.key === "a")) {
+      e.preventDefault();
+      panel.classList.toggle("hidden");
+      logMsg(panel.classList.contains("hidden") ? "Admin-Modus aus." : "Admin-Modus an.");
+    }
+  });
+}
+setupAdmin();
+
 /* ---------- Start ---------- */
 
 const loaded = load();

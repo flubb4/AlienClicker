@@ -128,9 +128,10 @@ img { -webkit-user-drag: none; user-select: none; }
 .noship .region-label { display: block; }
 
 /* laufende Figuren */
-.runner { position: absolute; top: 0; left: 0; height: 38%; transform-origin: center bottom; will-change: transform; pointer-events: none; }
+/* Einheitliche Figurengröße: an Schiffshöhe gekoppelt (--charh, von ship.js gesetzt) */
+.runner { position: absolute; top: 0; left: 0; height: var(--charh, 44px); transform-origin: center bottom; will-change: transform; pointer-events: none; }
 .runner img { height: 100%; width: auto; display: block; filter: drop-shadow(0 3px 5px rgba(0,0,0,0.7)) drop-shadow(0 0 5px rgba(120,255,150,0.3)); }
-.runner.noimg { width: 14px; height: 30px; }
+.runner.noimg { width: calc(var(--charh, 44px) * 0.42); height: var(--charh, 44px); }
 .runner.noimg::before { content: ""; position: absolute; top: 0; left: 50%; transform: translateX(-50%); width: 11px; height: 11px; border-radius: 50%; background: radial-gradient(circle at 40% 35%, #d6ffe2, #2bd45a); box-shadow: 0 0 8px rgba(109,255,143,0.7); }
 .runner.noimg::after { content: ""; position: absolute; top: 10px; left: 50%; transform: translateX(-50%); width: 13px; height: 22px; border-radius: 7px 7px 4px 4px; background: linear-gradient(180deg, #3a8a55, #14331f); box-shadow: 0 0 8px rgba(43,212,90,0.45); }
 
@@ -207,6 +208,23 @@ img { -webkit-user-drag: none; user-select: none; }
 ::-webkit-scrollbar { width: 6px; }
 ::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb { background: var(--border-bright); border-radius: 3px; }
+
+/* ===== Admin-Panel ===== */
+.admin {
+  position: fixed; bottom: 16px; left: 50%; transform: translateX(-50%); z-index: 200;
+  display: flex; flex-direction: column; gap: 8px; align-items: center;
+  background: rgba(8, 16, 11, 0.92); border: 1px solid var(--amber); border-radius: 14px;
+  padding: 14px 18px; backdrop-filter: blur(12px); box-shadow: 0 10px 40px rgba(0,0,0,0.8);
+}
+.admin.hidden { display: none; }
+.admin-title { font-family: var(--mono); font-size: 11px; letter-spacing: 3px; color: var(--amber); }
+.admin-row { display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; }
+.admin button {
+  background: transparent; color: var(--amber); border: 1px solid rgba(255,192,106,0.4);
+  border-radius: 8px; padding: 7px 12px; font-family: var(--mono); font-size: 12px; cursor: pointer; transition: 0.14s;
+}
+.admin button:hover { background: var(--amber); color: #04080a; }
+.admin-hint { font-family: var(--mono); font-size: 9px; color: var(--green-dim); letter-spacing: 1px; }
 
 /* ===== Responsive ===== */
 @media (max-width: 1180px) {

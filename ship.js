@@ -18,6 +18,13 @@
     const dt = Math.min(0.05, (now - last) / 1000);
     last = now;
 
+    // Einheitliche Figurengröße an die Schiffshöhe koppeln (nur bei Änderung setzen)
+    const deck = document.getElementById("deck");
+    if (deck) {
+      const ch = Math.round(deck.clientHeight * 0.115);
+      if (ch && deck.__ch !== ch) { deck.style.setProperty("--charh", ch + "px"); deck.__ch = ch; }
+    }
+
     // Zonen-Maße einmal pro Frame cachen (kein Layout-Thrashing)
     const zoneDim = new Map();
 
@@ -70,6 +77,21 @@
 
     requestAnimationFrame(frame);
   }
+
+  // Figurengröße auch unabhängig vom Animations-Loop setzen (robust bei Load/Resize)
+  function setCharSize() {
+    const deck = document.getElementById("deck");
+    if (deck && deck.clientHeight) {
+      deck.style.setProperty("--charh", Math.round(deck.clientHeight * 0.115) + "px");
+      deck.__ch = Math.round(deck.clientHeight * 0.115);
+    }
+  }
+  window.addEventListener("resize", setCharSize);
+  window.addEventListener("load", setCharSize);
+  const shipImg = document.getElementById("shipImg");
+  if (shipImg) shipImg.addEventListener("load", setCharSize);
+  setCharSize();
+  setTimeout(setCharSize, 300);
 
   requestAnimationFrame(frame);
 })();
