@@ -1,52 +1,48 @@
 /* =========================================================
-   WEYLAND-YUTANI // BIO-SPECIMEN HARVESTER
-   Ein Alien-Universum Auto-Clicker
+   DRAGON'S DEBT — Crew-Clicker im Alien-Universum
+   Klicke das Brücken-Terminal für Credits, heuere Crew an,
+   schalte Räume frei und tilge die Schiffsschulden.
    ========================================================= */
-
 "use strict";
 
 /* ---------- Spieldaten ---------- */
 
-// Auto-Produzenten: der Xenomorph-Lebenszyklus.
-// baseCost = Startpreis, rate = Biomasse/Sek pro Einheit.
-const GENERATORS = [
-  { id: "facehugger", name: "Facehugger",            baseCost: 15,      rate: 0.1,     icon: "🕷️", desc: "Klammert sich an Wirte. Sammelt passiv Biomasse." },
-  { id: "burster",    name: "Chestburster",          baseCost: 110,     rate: 1,       icon: "🐛", desc: "Frisch geschlüpft. Wächst rasend schnell." },
-  { id: "drone",      name: "Xenomorph-Drohne",      baseCost: 1200,    rate: 8,       icon: "👽", desc: "Arbeiterkaste des Schwarms." },
-  { id: "warrior",    name: "Xenomorph-Krieger",     baseCost: 13000,   rate: 47,      icon: "👾", desc: "Aggressive Beschützer der Brut." },
-  { id: "praetorian", name: "Praetorianer",          baseCost: 140000,  rate: 260,     icon: "🦖", desc: "Elite-Wache der Königin." },
-  { id: "queen",      name: "Xenomorph-Königin",     baseCost: 1.6e6,   rate: 1400,    icon: "👑", desc: "Legt Eier am laufenden Band." },
-  { id: "hive",       name: "Hive-Cluster",          baseCost: 2.1e7,   rate: 7800,    icon: "🪺", desc: "Ganzer Nestkomplex aus Harz." },
-  { id: "derelict",   name: "Derelict-Frachter",     baseCost: 3.3e8,   rate: 44000,   icon: "🛸", desc: "Abgestürztes Ei-Silo der Space Jockeys." },
-  { id: "lv426",      name: "Kolonie LV-426",        baseCost: 5.1e9,   rate: 260000,  icon: "🪐", desc: "Hadley's Hope. Vollständig infiziert." },
-  { id: "wy",         name: "W-Y Biowaffen-Sparte",  baseCost: 7.5e10,  rate: 1.6e6,   icon: "🏢", desc: "Industrielle Massenproduktion. Für die Firma." },
+// Crew = Auto-Produzenten. Jede Figur bekommt einen eigenen Raum.
+// Rollen/Reihenfolge gern anpassen.
+const CREW = [
+  { id: "mae",      name: "Mae",      role: "Maschinistin",            baseCost: 15,    rate: 0.2,  desc: "Hält die Triebwerke am Laufen." },
+  { id: "gustav",   name: "Gustav",   role: "Techniker",               baseCost: 120,   rate: 1.5,  desc: "Repariert, was übrig bleibt." },
+  { id: "silas",    name: "Silas",    role: "Pilot",                   baseCost: 1300,  rate: 9,    desc: "Fliegt den Frachter durchs Nichts." },
+  { id: "scott",    name: "Scott",    role: "Sicherheitsoffizier",     baseCost: 14000, rate: 50,   desc: "Bewacht Fracht und Crew." },
+  { id: "isabella", name: "Isabella", role: "Wissenschaftsoffizierin", baseCost: 2e5,   rate: 300,  desc: "Analysiert alles Organische." },
+  { id: "julian",   name: "Julian",   role: "Captain",                 baseCost: 3e6,   rate: 1800, desc: "Trägt die Schulden — und die Verantwortung." },
 ];
 
-// Ausrüstung: einmalige Käufe, multiplizieren die Klickkraft.
-const EQUIPMENT = [
-  { id: "prod",    name: "Viehtreiber-Stab",       cost: 120,    mult: 2, icon: "⚡", desc: "Verdoppelt die Entnahme pro Klick." },
-  { id: "tracker", name: "Bewegungsmelder M314",   cost: 2500,   mult: 2, icon: "📡", desc: "Präzisere Entnahme. x2 Klickkraft." },
-  { id: "pulse",   name: "M41A Pulsgewehr",        cost: 60000,  mult: 2, icon: "🔫", desc: "10mm explosiv. x2 Klickkraft." },
-  { id: "loader",  name: "P-5000 Power-Loader",    cost: 1.2e6,  mult: 3, icon: "🤖", desc: "\"Get away from her, you bitch!\" x3 Klickkraft." },
-  { id: "flamer",  name: "M240 Flammenwerfer",     cost: 3e7,    mult: 3, icon: "🔥", desc: "Nur sicher aus dem Orbit. x3 Klickkraft." },
-  { id: "sentry",  name: "UA 571-C Geschützturm",  cost: 7e8,    mult: 4, icon: "🎯", desc: "Automatisierte Entnahme-Salven. x4 Klickkraft." },
+// Systeme = einmalige Käufe, vervielfachen den Credit-Ertrag pro Klick.
+const MODULES = [
+  { id: "macro",   name: "Eingabe-Makro",       cost: 120,   mult: 2, icon: "⌨️", desc: "Verdoppelt Credits pro Terminal-Klick." },
+  { id: "cpu",     name: "Ko-Prozessor",        cost: 2500,  mult: 2, icon: "🖥️", desc: "x2 Klick-Ertrag." },
+  { id: "muthur",  name: "MU/TH/UR-Uplink",     cost: 60000, mult: 2, icon: "🤖", desc: "Direktzugriff auf den Bordcomputer. x2." },
+  { id: "quantum", name: "Quanten-Terminal",    cost: 1.2e6, mult: 3, icon: "⚛️", desc: "x3 Klick-Ertrag." },
+  { id: "neural",  name: "Neuronales Interface", cost: 3e7,  mult: 3, icon: "🧠", desc: "Gedankensteuerung. x3." },
+  { id: "ai",      name: "KI-Automatisierung",  cost: 7e8,   mult: 4, icon: "🛰️", desc: "Vollautomatische Eingabe. x4." },
 ];
 
-const SAVE_KEY = "alienclicker-save-v1";
+const SAVE_KEY = "dragonsdebt-save-v1";
 const BASE_CLICK = 1;
+const DEBT_TOTAL = 1e8; // Gesamtschuld in Credits, die getilgt werden muss
 
 /* ---------- Spielzustand ---------- */
 
 let state = {
-  biomass: 0,
-  totalBiomass: 0,
+  credits: 0,
+  totalEarned: 0,
   totalClicks: 0,
   startTime: Date.now(),
-  gens: {},     // id -> Anzahl
-  equip: {},    // id -> true
+  crew: {},     // id -> Anzahl
+  modules: {},  // id -> true
 };
-
-GENERATORS.forEach(g => (state.gens[g.id] = 0));
+CREW.forEach(c => (state.crew[c.id] = 0));
 
 /* ---------- Hilfsfunktionen ---------- */
 
@@ -59,55 +55,48 @@ function fmt(n) {
   return scaled.toFixed(scaled < 10 ? 2 : scaled < 100 ? 1 : 0) + SUFFIXES[tier];
 }
 
-// Preis eines Generators bei aktuellem Bestand (Cookie-Clicker-Skalierung 1.15^n).
-function genCost(g) {
-  return Math.ceil(g.baseCost * Math.pow(1.15, state.gens[g.id]));
+function crewCost(c) {
+  return Math.ceil(c.baseCost * Math.pow(1.15, state.crew[c.id]));
 }
-
 function clickMultiplier() {
   let m = 1;
-  EQUIPMENT.forEach(e => { if (state.equip[e.id]) m *= e.mult; });
+  MODULES.forEach(e => { if (state.modules[e.id]) m *= e.mult; });
   return m;
 }
-function clickPower() {
-  return BASE_CLICK * clickMultiplier();
-}
-
+function clickPower() { return BASE_CLICK * clickMultiplier(); }
 function perSecond() {
-  return GENERATORS.reduce((sum, g) => sum + g.rate * state.gens[g.id], 0);
+  return CREW.reduce((sum, c) => sum + c.rate * state.crew[c.id], 0);
 }
 
 /* ---------- DOM-Referenzen ---------- */
 
 const el = {
-  biomass: document.getElementById("biomass"),
+  credits: document.getElementById("credits"),
   rate: document.getElementById("rate"),
-  clickPower: document.getElementById("clickPower"),
-  eggBtn: document.getElementById("eggBtn"),
-  genList: document.getElementById("genList"),
-  equipList: document.getElementById("equipList"),
+  rooms: document.getElementById("rooms"),
+  crewList: document.getElementById("crewList"),
+  moduleList: document.getElementById("moduleList"),
   log: document.getElementById("log"),
   stats: document.getElementById("stats"),
   savedHint: document.getElementById("savedHint"),
-  colonyStage: document.getElementById("colonyStage"),
-  colonyFill: document.getElementById("colonyFill"),
-  infest: document.getElementById("infest"),
+  debtStage: document.getElementById("debtStage"),
+  debtFill: document.getElementById("debtFill"),
   stageFlash: document.getElementById("stageFlash"),
 };
 
-/* ---------- System-Log ---------- */
+/* ---------- Schiffs-Log ---------- */
 
 const LOG_FLAVOR = [
-  "Probe stabil. Biomasse-Strom nominal.",
-  "WARNUNG: Bewegung im Lüftungsschacht erkannt.",
-  "Spezimen 6 zeigt erhöhte Aggression.",
-  "Cryo-Kammern bei optimaler Temperatur.",
-  "Direktive 937: Crew entbehrlich. Priorität Probe.",
-  "Säure-Leck auf Deck C eingedämmt.",
-  "Mutter: Analyse abgeschlossen.",
-  "Quarantäne-Protokoll greift nicht. Ignoriere.",
-  "Neue Eiablage in Sektor 7 registriert.",
-  "Bishop meldet: Synthetik-Systeme stabil.",
+  "Reaktor stabil. Lebenserhaltung nominal.",
+  "MU/TH/UR: Kurskorrektur abgeschlossen.",
+  "WARNUNG: Mikro-Riss in Hülle, Sektor 3.",
+  "Frachtmanifest aktualisiert.",
+  "Schuldenzins der Bank verbucht.",
+  "Bewegungssensor: nichts Ungewöhnliches.",
+  "Cryo-Kammern bereit für Langschlaf.",
+  "Treibstoffreserven bei 87 %.",
+  "Eingehende Nachricht von der Reederei: 'Zahlt eure Raten.'",
+  "Hyperraum-Sprung in 12 Stunden geplant.",
 ];
 let logCount = 0;
 function logMsg(text, warn = false) {
@@ -121,17 +110,7 @@ function logMsg(text, warn = false) {
   while (el.log.childElementCount > 60) el.log.removeChild(el.log.firstChild);
 }
 
-/* ---------- Klick-Ernte ---------- */
-
-el.eggBtn.addEventListener("click", (ev) => {
-  const gain = clickPower();
-  state.biomass += gain;
-  state.totalBiomass += gain;
-  state.totalClicks++;
-  spawnFloat(ev.clientX, ev.clientY, "+" + fmt(gain));
-  if (window.__hiveAgitate) window.__hiveAgitate(ev.clientX, ev.clientY, 220);
-  updateReadout();
-});
+/* ---------- Klick-Ertrag (Terminal) ---------- */
 
 function spawnFloat(x, y, text) {
   const f = document.createElement("div");
@@ -143,102 +122,155 @@ function spawnFloat(x, y, text) {
   setTimeout(() => f.remove(), 900);
 }
 
+// Klicks auf das Brücken-Terminal (per Delegation, da Räume neu gerendert werden)
+el.rooms.addEventListener("click", (ev) => {
+  const term = ev.target.closest(".terminal");
+  if (!term) return;
+  const gain = clickPower();
+  state.credits += gain;
+  state.totalEarned += gain;
+  state.totalClicks++;
+  spawnFloat(ev.clientX, ev.clientY, "+" + fmt(gain));
+  term.classList.remove("ping"); void term.offsetWidth; term.classList.add("ping");
+  updateReadout();
+});
+
 /* ---------- Kaufen ---------- */
 
-function buyGen(g) {
-  const cost = genCost(g);
-  if (state.biomass < cost) return;
-  state.biomass -= cost;
-  state.gens[g.id]++;
-  if (state.gens[g.id] === 1) logMsg(`${g.name} aktiviert. Erste Einheit online.`);
+function buyCrew(c) {
+  const cost = crewCost(c);
+  if (state.credits < cost) return;
+  state.credits -= cost;
+  state.crew[c.id]++;
+  if (state.crew[c.id] === 1) logMsg(`${c.name} (${c.role}) angeheuert. Quartier entsiegelt.`, true);
+  renderRooms();
   renderShop();
   updateReadout();
 }
 
-function buyEquip(e) {
-  if (state.equip[e.id] || state.biomass < e.cost) return;
-  state.biomass -= e.cost;
-  state.equip[e.id] = true;
-  logMsg(`Ausrüstung erworben: ${e.name}.`, true);
+function buyModule(e) {
+  if (state.modules[e.id] || state.credits < e.cost) return;
+  state.credits -= e.cost;
+  state.modules[e.id] = true;
+  logMsg(`System installiert: ${e.name}.`);
   renderShop();
   updateReadout();
 }
 
-/* ---------- Rendering ---------- */
+/* ---------- Räume (Schiff) ---------- */
+
+function renderRooms() {
+  el.rooms.innerHTML = "";
+
+  // Brücke mit Terminal (immer da)
+  const bridge = document.createElement("div");
+  bridge.className = "room bridge";
+  bridge.innerHTML = `
+    <div class="room-top"><span class="room-name">BRÜCKE</span><span class="room-role">Terminal</span></div>
+    <div class="room-floor">
+      <button class="terminal" aria-label="Terminal bedienen">
+        <span class="term-screen"></span><span class="term-base"></span>
+      </button>
+    </div>
+    <div class="room-out">+<b id="clickPower">${fmt(clickPower())}</b> / Klick</div>
+  `;
+  el.rooms.appendChild(bridge);
+
+  // Crew-Räume
+  CREW.forEach(c => {
+    const owned = state.crew[c.id];
+    const active = owned > 0;
+    const room = document.createElement("div");
+    room.className = "room" + (active ? " active" : " locked");
+    room.dataset.id = c.id;
+    let floor = "";
+    if (active) {
+      const n = Math.min(3, owned);
+      for (let i = 0; i < n; i++) {
+        floor += `<div class="runner" data-id="${c.id}"><img src="assets/crew/${c.id}.png" alt="" draggable="false"
+                   onerror="this.remove(); this.parentElement.classList.add('noimg')"></div>`;
+      }
+    } else {
+      floor = `<span class="sealed">⊘ VERSIEGELT</span>`;
+    }
+    room.innerHTML = `
+      <div class="room-top">
+        <span class="room-name">${active ? c.name : c.name}</span>
+        <span class="room-role">${active ? c.role : "—"}</span>
+      </div>
+      <div class="room-floor">${floor}</div>
+      <div class="room-out">${active ? `+${fmt(c.rate * owned)} cr/s · ×${owned}` : "Crew anheuern →"}</div>
+    `;
+    el.rooms.appendChild(room);
+  });
+}
+
+/* ---------- Shop ---------- */
 
 function renderShop() {
-  // Generatoren
-  el.genList.innerHTML = "";
-  GENERATORS.forEach((g, i) => {
-    const cost = genCost(g);
-    const unlocked = i === 0 || state.gens[GENERATORS[i - 1].id] > 0 || state.gens[g.id] > 0;
+  // Crew
+  el.crewList.innerHTML = "";
+  CREW.forEach((c, i) => {
+    const cost = crewCost(c);
+    const unlocked = i === 0 || state.crew[CREW[i - 1].id] > 0 || state.crew[c.id] > 0;
     if (!unlocked) return;
-    const affordable = state.biomass >= cost;
+    const affordable = state.credits >= cost;
     const item = document.createElement("div");
     item.className = "item" + (affordable ? "" : " locked");
     item.innerHTML = `
-      <div class="thumb"><span class="thumb-fallback">${g.icon}</span><img src="assets/spec/${g.id}.png" alt="" onerror="this.remove()"></div>
+      <div class="thumb"><span class="thumb-fallback">${c.name[0]}</span><img src="assets/crew/${c.id}.png" alt="" onerror="this.remove()"></div>
       <div class="item-info">
-        <div class="item-name">${g.name}<span class="count">×${state.gens[g.id]}</span></div>
-        <div class="item-rate">${fmt(g.rate)}/s pro Einheit · ${g.desc}</div>
+        <div class="item-name">${c.name}<span class="count">×${state.crew[c.id]}</span></div>
+        <div class="item-rate">${c.role} · +${fmt(c.rate)} cr/s</div>
       </div>
-      <div class="item-cost"><span class="cost-val">${fmt(cost)}</span><span class="cost-lbl">BIOMASSE</span></div>
+      <div class="item-cost"><span class="cost-val">${fmt(cost)}</span><span class="cost-lbl">CREDITS</span></div>
     `;
-    item.addEventListener("click", () => buyGen(g));
-    el.genList.appendChild(item);
+    item.addEventListener("click", () => buyCrew(c));
+    el.crewList.appendChild(item);
   });
 
-  // Ausrüstung
-  el.equipList.innerHTML = "";
-  EQUIPMENT.forEach(e => {
-    const bought = !!state.equip[e.id];
-    const affordable = state.biomass >= e.cost;
+  // Systeme
+  el.moduleList.innerHTML = "";
+  MODULES.forEach(e => {
+    const bought = !!state.modules[e.id];
+    const affordable = state.credits >= e.cost;
     const item = document.createElement("div");
     item.className = "item" + (bought ? " maxed" : affordable ? "" : " locked");
     item.innerHTML = `
-      <div class="thumb"><span class="thumb-fallback">${e.icon}</span><img src="assets/equip/${e.id}.png" alt="" onerror="this.remove()"></div>
+      <div class="thumb"><span class="thumb-fallback">${e.icon}</span></div>
       <div class="item-info">
-        <div class="item-name">${e.name}${bought ? ' <span class="count">[INSTALLIERT]</span>' : ""}</div>
+        <div class="item-name">${e.name}${bought ? ' <span class="count">[AKTIV]</span>' : ""}</div>
         <div class="item-desc">${e.desc}</div>
       </div>
-      <div class="item-cost">${bought ? '<span class="cost-val">✓</span>' : `<span class="cost-val">${fmt(e.cost)}</span><span class="cost-lbl">BIOMASSE</span>`}</div>
+      <div class="item-cost">${bought ? '<span class="cost-val">✓</span>' : `<span class="cost-val">${fmt(e.cost)}</span><span class="cost-lbl">CREDITS</span>`}</div>
     `;
-    if (!bought) item.addEventListener("click", () => buyEquip(e));
-    el.equipList.appendChild(item);
+    if (!bought) item.addEventListener("click", () => buyModule(e));
+    el.moduleList.appendChild(item);
   });
 }
 
 function updateReadout() {
-  el.biomass.textContent = fmt(Math.floor(state.biomass));
+  el.credits.textContent = fmt(Math.floor(state.credits));
   el.rate.textContent = fmt(perSecond()) + " / SEK";
-  el.clickPower.textContent = fmt(clickPower());
-  // Erschwinglichkeit live togglen, ohne Shop neu zu bauen
+  const cp = document.getElementById("clickPower");
+  if (cp) cp.textContent = fmt(clickPower());
   refreshAffordability();
 }
 
 let lastShopSignature = "";
 function refreshAffordability() {
-  // Nur Klassen aktualisieren (billig). Vollständiger Rebuild nur bei Bestandsänderung.
-  const sig = GENERATORS.map(g => state.gens[g.id]).join(",") +
-              "|" + EQUIPMENT.map(e => state.equip[e.id] ? 1 : 0).join(",");
-  if (sig !== lastShopSignature) {
-    renderShop();
-    lastShopSignature = sig;
-    return;
-  }
-  // Bestand unverändert -> nur Erschwinglichkeits-Klassen anpassen (billig).
+  const sig = CREW.map(c => state.crew[c.id]).join(",") + "|" + MODULES.map(e => state.modules[e.id] ? 1 : 0).join(",");
+  if (sig !== lastShopSignature) { renderShop(); lastShopSignature = sig; return; }
   let gi = 0;
-  GENERATORS.forEach((g, i) => {
-    const unlocked = i === 0 || state.gens[GENERATORS[i - 1].id] > 0 || state.gens[g.id] > 0;
+  CREW.forEach((c, i) => {
+    const unlocked = i === 0 || state.crew[CREW[i - 1].id] > 0 || state.crew[c.id] > 0;
     if (!unlocked) return;
-    const node = el.genList.children[gi++];
-    if (!node) return;
-    node.classList.toggle("locked", state.biomass < genCost(g));
+    const node = el.crewList.children[gi++];
+    if (node) node.classList.toggle("locked", state.credits < crewCost(c));
   });
-  EQUIPMENT.forEach((e, i) => {
-    const node = el.equipList.children[i];
-    if (!node || state.equip[e.id]) return;
-    node.classList.toggle("locked", state.biomass < e.cost);
+  MODULES.forEach((e, i) => {
+    const node = el.moduleList.children[i];
+    if (node && !state.modules[e.id]) node.classList.toggle("locked", state.credits < e.cost);
   });
 }
 
@@ -246,66 +278,41 @@ function renderStats() {
   const playMs = Date.now() - state.startTime;
   const mins = Math.floor(playMs / 60000);
   const playStr = mins < 60 ? `${mins} Min` : `${Math.floor(mins/60)} Std ${mins%60} Min`;
-  const totalGens = GENERATORS.reduce((s, g) => s + state.gens[g.id], 0);
+  const crewAboard = CREW.reduce((s, c) => s + (state.crew[c.id] > 0 ? 1 : 0), 0);
+  const open = Math.max(0, DEBT_TOTAL - state.totalEarned);
   el.stats.innerHTML = `
-    <div class="row"><span>Gesamt geerntet</span><b>${fmt(Math.floor(state.totalBiomass))}</b></div>
-    <div class="row"><span>Entnahmen (Klicks)</span><b>${fmt(state.totalClicks)}</b></div>
-    <div class="row"><span>Spezimen aktiv</span><b>${fmt(totalGens)}</b></div>
-    <div class="row"><span>Klickkraft</span><b>×${fmt(clickMultiplier())}</b></div>
-    <div class="row"><span>Laufzeit</span><b>${playStr}</b></div>
+    <div class="row"><span>Credits gesamt</span><b>${fmt(Math.floor(state.totalEarned))}</b></div>
+    <div class="row"><span>Schuld offen</span><b>${fmt(Math.ceil(open))}</b></div>
+    <div class="row"><span>Terminal-Klicks</span><b>${fmt(state.totalClicks)}</b></div>
+    <div class="row"><span>Crew an Bord</span><b>${crewAboard} / ${CREW.length}</b></div>
+    <div class="row"><span>Klick-Ertrag</span><b>×${fmt(clickMultiplier())}</b></div>
+    <div class="row"><span>Dienstzeit</span><b>${playStr}</b></div>
   `;
 }
 
-/* ---------- Kolonie-Status ---------- */
+/* ---------- Schulden-Tilgung ---------- */
 
-const COLONY_STAGES = [
-  { name: "STERILE ZONE",    min: 0,    msg: "Anlage steril. Noch kein organisches Wachstum." },
-  { name: "INKUBATION",      min: 200,  msg: "Erste Eiablage stabil. Inkubation läuft." },
-  { name: "ERSTKONTAKT",     min: 3000, msg: "Wirt infiziert. Lebenszyklus eingeleitet." },
-  { name: "AUSBRUCH",        min: 4e4,  msg: "WARNUNG: Containment-Breach. Spezimen entkommen." },
-  { name: "INFESTATION",     min: 5e5,  msg: "Sektoren überrannt. Schwarm breitet sich aus." },
-  { name: "SCHWARM",         min: 6e6,  msg: "Vollständiger Schwarm aktiv. Crew verloren." },
-  { name: "KÖNIGINREICH",    min: 8e7,  msg: "Königin etabliert. Hive expandiert exponentiell." },
-  { name: "HIVE-DOMINANZ",   min: 2e9,  msg: "Kolonie dominiert die Anlage. Orbit-Sperre aktiv." },
-  { name: "APEX-PRÄDATOR",   min: 6e10, msg: "APEX erreicht. Die perfekte Spezies. Für die Firma." },
+const DEBT_MILESTONES = [
+  { pct: 10,  msg: "10 % getilgt. Die Reederei hält still." },
+  { pct: 25,  msg: "Ein Viertel weg. Erste Mahnung zurückgezogen." },
+  { pct: 50,  msg: "Halbzeit. Die Crew schöpft Hoffnung." },
+  { pct: 75,  msg: "75 %. Das Schiff gehört fast euch." },
+  { pct: 100, msg: "SCHULDEN GETILGT. DRAGON'S DEBT ist frei!" },
 ];
-let lastStageIdx = -1;
+let lastMilestone = -1;
 
-function renderColony() {
-  const b = Math.max(1, state.totalBiomass);
-  let idx = 0;
-  for (let i = 0; i < COLONY_STAGES.length; i++) if (b >= COLONY_STAGES[i].min) idx = i;
-  const cur = COLONY_STAGES[idx];
-  const next = COLONY_STAGES[idx + 1];
-
-  let pct = 100;
-  if (next) {
-    const lo = Math.log10(Math.max(1, cur.min || 1));
-    const hi = Math.log10(next.min);
-    pct = Math.max(0, Math.min(100, ((Math.log10(b) - lo) / (hi - lo)) * 100));
-  }
-  el.colonyStage.textContent = cur.name;
-  el.colonyFill.style.width = pct + "%";
-
-  // Umgebungs-Infestation skaliert mit dem Status
-  el.infest.style.opacity = (idx / (COLONY_STAGES.length - 1) * 0.55).toFixed(2);
-
-  // Aufstieg in neuen Status: Log + Aufblitzen
-  if (idx > lastStageIdx) {
-    if (lastStageIdx !== -1) {
-      logMsg(`KOLONIE-STATUS → ${cur.name}. ${cur.msg}`, true);
-      el.stageFlash.classList.remove("on");
-      void el.stageFlash.offsetWidth; // Reflow, damit die Animation neu startet
-      el.stageFlash.classList.add("on");
+function renderDebt() {
+  const pct = Math.min(100, (state.totalEarned / DEBT_TOTAL) * 100);
+  el.debtStage.textContent = pct.toFixed(pct < 10 ? 1 : 0) + " %";
+  el.debtFill.style.width = pct + "%";
+  for (let i = 0; i < DEBT_MILESTONES.length; i++) {
+    if (pct >= DEBT_MILESTONES[i].pct && i > lastMilestone) {
+      lastMilestone = i;
+      logMsg(`SCHULDEN-TILGUNG: ${DEBT_MILESTONES[i].msg}`, true);
+      el.stageFlash.classList.remove("on"); void el.stageFlash.offsetWidth; el.stageFlash.classList.add("on");
     }
-    lastStageIdx = idx;
   }
 }
-
-// Datenschnittstelle für hive.js (lebende Kolonie)
-window.colonyData = function () {
-  return { gens: state.gens, perSec: perSecond(), total: state.totalBiomass };
-};
 
 /* ---------- Game-Loop ---------- */
 
@@ -315,21 +322,16 @@ function tick() {
   const dt = (now - lastTick) / 1000;
   lastTick = now;
   const gain = perSecond() * dt;
-  if (gain > 0) {
-    state.biomass += gain;
-    state.totalBiomass += gain;
-  }
+  if (gain > 0) { state.credits += gain; state.totalEarned += gain; }
   updateReadout();
 }
 setInterval(tick, 100);
 setInterval(renderStats, 500);
-setInterval(renderColony, 500);
+setInterval(renderDebt, 500);
 
-// Flavor-Log alle ~18s
 setInterval(() => {
-  const warn = LOG_FLAVOR[logCount % LOG_FLAVOR.length].startsWith("WARNUNG") ||
-               LOG_FLAVOR[logCount % LOG_FLAVOR.length].startsWith("Direktive");
-  logMsg(LOG_FLAVOR[logCount % LOG_FLAVOR.length], warn);
+  const m = LOG_FLAVOR[logCount % LOG_FLAVOR.length];
+  logMsg(m, m.startsWith("WARNUNG") || m.startsWith("Eingehende"));
   logCount++;
 }, 18000);
 
@@ -339,12 +341,10 @@ function save(showHint = false) {
   try {
     localStorage.setItem(SAVE_KEY, JSON.stringify(state));
     if (showHint) {
-      el.savedHint.textContent = "// Zustand in lokalem Speicher gesichert.";
+      el.savedHint.textContent = "// Logbuch gesichert.";
       setTimeout(() => (el.savedHint.textContent = ""), 2500);
     }
-  } catch (err) {
-    el.savedHint.textContent = "// FEHLER: Speichern fehlgeschlagen.";
-  }
+  } catch (err) { el.savedHint.textContent = "// FEHLER: Speichern fehlgeschlagen."; }
 }
 
 function load() {
@@ -352,48 +352,38 @@ function load() {
     const raw = localStorage.getItem(SAVE_KEY);
     if (!raw) return false;
     const data = JSON.parse(raw);
-    state.biomass = data.biomass || 0;
-    state.totalBiomass = data.totalBiomass || 0;
+    state.credits = data.credits || 0;
+    state.totalEarned = data.totalEarned || 0;
     state.totalClicks = data.totalClicks || 0;
     state.startTime = data.startTime || Date.now();
-    GENERATORS.forEach(g => (state.gens[g.id] = (data.gens && data.gens[g.id]) || 0));
-    state.equip = data.equip || {};
+    CREW.forEach(c => (state.crew[c.id] = (data.crew && data.crew[c.id]) || 0));
+    state.modules = data.modules || {};
 
-    // Offline-Fortschritt (gedeckelt auf 8 Std, halbe Rate)
     const offlineMs = Date.now() - (data._savedAt || Date.now());
     if (offlineMs > 10000) {
       const cappedSec = Math.min(offlineMs / 1000, 8 * 3600);
       const earned = perSecond() * cappedSec * 0.5;
       if (earned > 0) {
-        state.biomass += earned;
-        state.totalBiomass += earned;
-        logMsg(`Reaktivierung nach Stillstand. Offline-Ertrag: ${fmt(Math.floor(earned))} Biomasse.`, true);
+        state.credits += earned; state.totalEarned += earned;
+        logMsg(`Rückkehr aus dem Cryo-Schlaf. Crew erwirtschaftete ${fmt(Math.floor(earned))} Credits.`, true);
       }
     }
     return true;
-  } catch (err) {
-    return false;
-  }
+  } catch (err) { return false; }
 }
 
 document.getElementById("saveBtn").addEventListener("click", () => save(true));
-
 document.getElementById("resetBtn").addEventListener("click", () => {
-  if (!confirm("PURGE-PROTOKOLL: Alle Probendaten unwiderruflich löschen?\nDie Firma wird das nicht gutheißen.")) return;
+  if (!confirm("RESET: Logbuch und Fortschritt unwiderruflich löschen?")) return;
   localStorage.removeItem(SAVE_KEY);
-  state = { biomass: 0, totalBiomass: 0, totalClicks: 0, startTime: Date.now(), gens: {}, equip: {} };
-  GENERATORS.forEach(g => (state.gens[g.id] = 0));
-  lastShopSignature = "";
-  logMsg("PURGE ausgeführt. Anlage zurückgesetzt.", true);
-  renderShop();
-  updateReadout();
+  state = { credits: 0, totalEarned: 0, totalClicks: 0, startTime: Date.now(), crew: {}, modules: {} };
+  CREW.forEach(c => (state.crew[c.id] = 0));
+  lastShopSignature = ""; lastMilestone = -1;
+  logMsg("Schiffssysteme zurückgesetzt.", true);
+  renderRooms(); renderShop(); updateReadout();
 });
 
-// Auto-Save alle 15s + beim Schließen (mit Zeitstempel für Offline-Ertrag)
-function saveWithStamp(showHint) {
-  state._savedAt = Date.now();
-  save(showHint);
-}
+function saveWithStamp(showHint) { state._savedAt = Date.now(); save(showHint); }
 setInterval(() => saveWithStamp(false), 15000);
 window.addEventListener("beforeunload", () => saveWithStamp(false));
 
@@ -403,18 +393,22 @@ document.querySelectorAll(".tab").forEach(tab => {
     document.querySelectorAll(".tab").forEach(t => t.classList.remove("active"));
     tab.classList.add("active");
     const which = tab.dataset.tab;
-    el.genList.classList.toggle("hidden", which !== "gen");
-    el.equipList.classList.toggle("hidden", which !== "equip");
+    el.crewList.classList.toggle("hidden", which !== "crew");
+    el.moduleList.classList.toggle("hidden", which !== "modules");
   });
 });
+
+// Daten für ship.js
+window.crewData = function () { return { crew: state.crew }; };
 
 /* ---------- Start ---------- */
 
 const loaded = load();
-logMsg("WEYLAND-YUTANI Bio-Specimen Harvester gestartet.");
-logMsg(loaded ? "Gespeicherte Probendaten wiederhergestellt." : "Keine Vordaten. Neue Anlage initialisiert.");
+logMsg("DRAGON'S DEBT — Bordsysteme hochgefahren.");
+logMsg(loaded ? "Logbuch wiederhergestellt." : "Neue Schicht. Schulden offen: " + fmt(DEBT_TOTAL) + " Credits.");
+renderRooms();
 renderShop();
-lastShopSignature = GENERATORS.map(g => state.gens[g.id]).join(",") + "|" + EQUIPMENT.map(e => state.equip[e.id] ? 1 : 0).join(",");
+lastShopSignature = CREW.map(c => state.crew[c.id]).join(",") + "|" + MODULES.map(e => state.modules[e.id] ? 1 : 0).join(",");
 updateReadout();
 renderStats();
-renderColony();
+renderDebt();

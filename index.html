@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>W-Y // BIO-SPECIMEN HARVESTER</title>
+  <title>DRAGON'S DEBT // Crew-Manifest</title>
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
@@ -11,94 +11,64 @@
   <img class="bg-image" id="bgImage" src="assets/bg.png" alt="" draggable="false" onerror="this.remove()" />
   <div class="bg-glow"></div>
   <div class="bg-fog"></div>
-  <div class="infest" id="infest"></div>
-  <canvas id="hive"></canvas>
   <div class="scanlines"></div>
   <div class="vignette"></div>
   <div class="frame"></div>
   <div class="stage-flash" id="stageFlash"></div>
 
-  <!-- Slim Topbar -->
+  <!-- Topbar -->
   <header class="topbar">
     <div class="brand">
-      <span class="logo">◢◤</span>
+      <span class="logo">⬡</span>
       <div class="brand-text">
-        <span class="wy">WEYLAND-YUTANI</span>
-        <span class="dept">BIO-SPECIMEN HARVESTER v2.1</span>
+        <span class="wy">DRAGON'S DEBT</span>
+        <span class="dept">USCSS-FRACHTER // CREW-MANIFEST</span>
       </div>
     </div>
     <div class="status"><span class="dot"></span> SYS-LINK <b>ONLINE</b></div>
   </header>
 
-  <!-- Linkes Panel: Log + Stats -->
+  <!-- Linkes Panel: Log + Status -->
   <aside class="panel side-left">
-    <h2 class="panel-title">System-Log</h2>
+    <h2 class="panel-title">Schiffs-Log</h2>
     <div class="log" id="log"></div>
-    <h2 class="panel-title">Statistik</h2>
+    <h2 class="panel-title">Status</h2>
     <div class="stats" id="stats"></div>
     <div class="controls">
       <button class="ctl" id="saveBtn">Speichern</button>
-      <button class="ctl danger" id="resetBtn">Purge</button>
+      <button class="ctl danger" id="resetBtn">Reset</button>
     </div>
     <div class="saved-hint" id="savedHint"></div>
   </aside>
 
-  <!-- ZENTRUM: Probenentnahme -->
-  <main class="harvest">
+  <!-- ZENTRUM: Das Schiff -->
+  <main class="ship">
     <div class="readout">
-      <div class="biomass-amount" id="biomass">0</div>
-      <div class="biomass-label">BIOMASSE-EINHEITEN</div>
+      <div class="credits" id="credits">0</div>
+      <div class="credits-label">CREDITS</div>
       <div class="rate-chip" id="rate">0 / SEK</div>
-      <div class="colony">
-        <div class="colony-head">
-          <span class="colony-label">KOLONIE-STATUS</span>
-          <span class="colony-stage" id="colonyStage">STERILE ZONE</span>
+      <div class="debt">
+        <div class="debt-head">
+          <span class="debt-label">SCHULDEN-TILGUNG</span>
+          <span class="debt-pct" id="debtStage">0 %</span>
         </div>
-        <div class="colony-bar"><span id="colonyFill"></span></div>
+        <div class="debt-bar"><span id="debtFill"></span></div>
       </div>
     </div>
-
-    <button class="egg-btn" id="eggBtn" aria-label="Ovomorph ernten">
-      <span class="egg-mist"></span>
-      <span class="egg-halo"></span>
-      <span class="egg-aura"></span>
-      <img class="egg-img" id="eggImg" src="assets/egg.png" alt="" draggable="false"
-           onerror="this.remove(); var s=document.getElementById('eggSvg'); if(s) s.style.display='block';" />
-      <svg id="eggSvg" viewBox="0 0 200 240" class="egg-svg" xmlns="http://www.w3.org/2000/svg" style="display:none">
-        <defs>
-          <radialGradient id="eggBody" cx="50%" cy="38%" r="70%">
-            <stop offset="0%" stop-color="#3a4a3a"/>
-            <stop offset="55%" stop-color="#1d271d"/>
-            <stop offset="100%" stop-color="#0a0f0a"/>
-          </radialGradient>
-        </defs>
-        <ellipse class="egg-shadow" cx="100" cy="225" rx="62" ry="12"/>
-        <path class="egg-shell" d="M100 22 C152 22 172 90 172 142 C172 204 142 226 100 226 C58 226 28 204 28 142 C28 90 48 22 100 22 Z" fill="url(#eggBody)" stroke="#4f6b4f" stroke-width="2"/>
-        <g class="egg-lips">
-          <path class="lip" d="M100 40 C112 70 112 95 100 110 C88 95 88 70 100 40 Z"/>
-          <path class="lip" d="M70 52 C90 72 95 90 100 110 C80 100 65 84 58 64 Z"/>
-          <path class="lip" d="M130 52 C110 72 105 90 100 110 C120 100 135 84 142 64 Z"/>
-        </g>
-      </svg>
-    </button>
-
-    <div class="egg-meta">
-      <span class="egg-hint">▼ ANTIPPEN ZUM ENTNEHMEN ▼</span>
-      <span class="click-power">PRO ENTNAHME · <b id="clickPower">1</b></span>
-    </div>
+    <div class="rooms" id="rooms"></div>
   </main>
 
-  <!-- Rechtes Panel: Shop -->
+  <!-- Rechtes Panel: Crew + Systeme -->
   <aside class="panel side-right">
     <div class="tabs">
-      <button class="tab active" data-tab="gen">Spezimen</button>
-      <button class="tab" data-tab="equip">Ausrüstung</button>
+      <button class="tab active" data-tab="crew">Crew</button>
+      <button class="tab" data-tab="modules">Systeme</button>
     </div>
-    <div class="tab-body" id="genList"></div>
-    <div class="tab-body hidden" id="equipList"></div>
+    <div class="tab-body" id="crewList"></div>
+    <div class="tab-body hidden" id="moduleList"></div>
   </aside>
 
   <script src="game.js"></script>
-  <script src="hive.js"></script>
+  <script src="ship.js"></script>
 </body>
 </html>
