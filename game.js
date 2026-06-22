@@ -9,13 +9,26 @@
 
 // Crew = Auto-Produzenten. Jede Figur bekommt einen eigenen Raum.
 // Rollen/Reihenfolge gern anpassen.
+// room = in welchem Raum des Deckplans die Figur läuft (siehe ROOMS).
+// Zuordnung/Reihenfolge/Rollen gern anpassen.
 const CREW = [
-  { id: "mae",      name: "Mae",      role: "Maschinistin",            baseCost: 15,    rate: 0.2,  desc: "Hält die Triebwerke am Laufen." },
-  { id: "gustav",   name: "Gustav",   role: "Techniker",               baseCost: 120,   rate: 1.5,  desc: "Repariert, was übrig bleibt." },
-  { id: "silas",    name: "Silas",    role: "Pilot",                   baseCost: 1300,  rate: 9,    desc: "Fliegt den Frachter durchs Nichts." },
-  { id: "scott",    name: "Scott",    role: "Sicherheitsoffizier",     baseCost: 14000, rate: 50,   desc: "Bewacht Fracht und Crew." },
-  { id: "isabella", name: "Isabella", role: "Wissenschaftsoffizierin", baseCost: 2e5,   rate: 300,  desc: "Analysiert alles Organische." },
-  { id: "julian",   name: "Julian",   role: "Captain",                 baseCost: 3e6,   rate: 1800, desc: "Trägt die Schulden — und die Verantwortung." },
+  { id: "mae",      name: "Mae",      role: "Maschinistin",            room: "engine",  baseCost: 15,    rate: 0.2,  desc: "Hält die Triebwerke am Laufen." },
+  { id: "gustav",   name: "Gustav",   role: "Techniker",               room: "android", baseCost: 120,   rate: 1.5,  desc: "Wartet die Androiden." },
+  { id: "silas",    name: "Silas",    role: "Pilot",                   room: "bridge",  baseCost: 1300,  rate: 9,    desc: "Fliegt den Frachter durchs Nichts." },
+  { id: "scott",    name: "Scott",    role: "Sicherheitsoffizier",     room: "food",    baseCost: 14000, rate: 50,   desc: "Bewacht Fracht und Crew." },
+  { id: "isabella", name: "Isabella", role: "Sanitäterin",             room: "medbay",  baseCost: 2e5,   rate: 300,  desc: "Hält die Crew am Leben." },
+  { id: "julian",   name: "Julian",   role: "Captain",                 room: "muthur",  baseCost: 3e6,   rate: 1800, desc: "Trägt die Schulden — und die Verantwortung." },
+];
+
+// Räume des Deckplans. box = Lauf-Zone in % des Schiff-Bildes (l=links, t=oben, w=breite, h=höhe).
+// Werte sind Schätzungen und werden am echten Bild feinjustiert.
+const ROOMS = [
+  { id: "bridge",  label: "BRÜCKE",         box: { l: 24, t: 7,  w: 52, h: 16 } },
+  { id: "medbay",  label: "KRANKENSTATION", box: { l: 9,  t: 26, w: 33, h: 19 } },
+  { id: "food",    label: "FOOD STORAGE",   box: { l: 58, t: 26, w: 33, h: 19 } },
+  { id: "muthur",  label: "MUTHUR",         box: { l: 9,  t: 48, w: 33, h: 20 } },
+  { id: "android", label: "ANDROID BAY",    box: { l: 58, t: 48, w: 33, h: 20 } },
+  { id: "engine",  label: "ENGINE ROOM",    box: { l: 14, t: 73, w: 72, h: 18 } },
 ];
 
 // Systeme = einmalige Käufe, vervielfachen den Credit-Ertrag pro Klick.
@@ -73,7 +86,7 @@ function perSecond() {
 const el = {
   credits: document.getElementById("credits"),
   rate: document.getElementById("rate"),
-  rooms: document.getElementById("rooms"),
+  deck: document.getElementById("deck"),
   crewList: document.getElementById("crewList"),
   moduleList: document.getElementById("moduleList"),
   log: document.getElementById("log"),
@@ -122,8 +135,8 @@ function spawnFloat(x, y, text) {
   setTimeout(() => f.remove(), 900);
 }
 
-// Klicks auf das Brücken-Terminal (per Delegation, da Räume neu gerendert werden)
-el.rooms.addEventListener("click", (ev) => {
+// Klicks auf das Brücken-Terminal (per Delegation, da das Deck neu gerendert wird)
+el.deck.addEventListener("click", (ev) => {
   const term = ev.target.closest(".terminal");
   if (!term) return;
   const gain = clickPower();
@@ -142,8 +155,8 @@ function buyCrew(c) {
   if (state.credits < cost) return;
   state.credits -= cost;
   state.crew[c.id]++;
-  if (state.crew[c.id] === 1) logMsg(`${c.name} (${c.role}) angeheuert. Quartier entsiegelt.`, true);
-  renderRooms();
+  if (state.crew[c.id] === 1) logMsg(`${c.name} (${c.role}) angeheuert. An Bord.`, true);
+  renderDeck();
   renderShop();
   updateReadout();
 }
@@ -157,51 +170,46 @@ function buyModule(e) {
   updateReadout();
 }
 
-/* ---------- Räume (Schiff) ---------- */
+/* ---------- Deckplan (Räume + laufende Crew) ---------- */
 
-function renderRooms() {
-  el.rooms.innerHTML = "";
+function renderDeck() {
+  el.deck.innerHTML = "";
 
-  // Brücke mit Terminal (immer da)
-  const bridge = document.createElement("div");
-  bridge.className = "room bridge";
-  bridge.innerHTML = `
-    <div class="room-top"><span class="room-name">BRÜCKE</span><span class="room-role">Terminal</span></div>
-    <div class="room-floor">
-      <button class="terminal" aria-label="Terminal bedienen">
-        <span class="term-screen"></span><span class="term-base"></span>
-      </button>
-    </div>
-    <div class="room-out">+<b id="clickPower">${fmt(clickPower())}</b> / Klick</div>
-  `;
-  el.rooms.appendChild(bridge);
+  ROOMS.forEach(room => {
+    const zone = document.createElement("div");
+    zone.className = "region";
+    zone.dataset.room = room.id;
+    zone.style.left = room.box.l + "%";
+    zone.style.top = room.box.t + "%";
+    zone.style.width = room.box.w + "%";
+    zone.style.height = room.box.h + "%";
 
-  // Crew-Räume
-  CREW.forEach(c => {
-    const owned = state.crew[c.id];
-    const active = owned > 0;
-    const room = document.createElement("div");
-    room.className = "room" + (active ? " active" : " locked");
-    room.dataset.id = c.id;
-    let floor = "";
-    if (active) {
-      const n = Math.min(3, owned);
+    // Label (nur sichtbar im Fallback ohne Schiffsbild)
+    zone.innerHTML = `<span class="region-label">${room.label}</span>`;
+
+    // Crew, die in diesem Raum laufen
+    CREW.filter(c => c.room === room.id && state.crew[c.id] > 0).forEach(c => {
+      const n = Math.min(3, state.crew[c.id]);
       for (let i = 0; i < n; i++) {
-        floor += `<div class="runner" data-id="${c.id}"><img src="assets/crew/${c.id}.png" alt="" draggable="false"
-                   onerror="this.remove(); this.parentElement.classList.add('noimg')"></div>`;
+        const r = document.createElement("div");
+        r.className = "runner";
+        r.dataset.id = c.id;
+        r.innerHTML = `<img src="assets/crew/${c.id}.png" alt="${c.name}" draggable="false"
+                        onerror="this.remove(); this.parentElement.classList.add('noimg')">`;
+        zone.appendChild(r);
       }
-    } else {
-      floor = `<span class="sealed">⊘ VERSIEGELT</span>`;
+    });
+
+    // Terminal-Hotspot in der Brücke (Klick-Ziel)
+    if (room.id === "bridge") {
+      const term = document.createElement("button");
+      term.className = "terminal";
+      term.setAttribute("aria-label", "Terminal bedienen");
+      term.innerHTML = `<span class="term-screen"></span>`;
+      zone.appendChild(term);
     }
-    room.innerHTML = `
-      <div class="room-top">
-        <span class="room-name">${active ? c.name : c.name}</span>
-        <span class="room-role">${active ? c.role : "—"}</span>
-      </div>
-      <div class="room-floor">${floor}</div>
-      <div class="room-out">${active ? `+${fmt(c.rate * owned)} cr/s · ×${owned}` : "Crew anheuern →"}</div>
-    `;
-    el.rooms.appendChild(room);
+
+    el.deck.appendChild(zone);
   });
 }
 
@@ -380,7 +388,7 @@ document.getElementById("resetBtn").addEventListener("click", () => {
   CREW.forEach(c => (state.crew[c.id] = 0));
   lastShopSignature = ""; lastMilestone = -1;
   logMsg("Schiffssysteme zurückgesetzt.", true);
-  renderRooms(); renderShop(); updateReadout();
+  renderDeck(); renderShop(); updateReadout();
 });
 
 function saveWithStamp(showHint) { state._savedAt = Date.now(); save(showHint); }
@@ -406,7 +414,7 @@ window.crewData = function () { return { crew: state.crew }; };
 const loaded = load();
 logMsg("DRAGON'S DEBT — Bordsysteme hochgefahren.");
 logMsg(loaded ? "Logbuch wiederhergestellt." : "Neue Schicht. Schulden offen: " + fmt(DEBT_TOTAL) + " Credits.");
-renderRooms();
+renderDeck();
 renderShop();
 lastShopSignature = CREW.map(c => state.crew[c.id]).join(",") + "|" + MODULES.map(e => state.modules[e.id] ? 1 : 0).join(",");
 updateReadout();

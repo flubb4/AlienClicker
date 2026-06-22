@@ -1,7 +1,7 @@
 /* =========================================================
-   SHIP — animiert die Crew-Figuren, die in ihren Räumen
-   hin- und herlaufen. Liest die .runner-Elemente, die
-   game.js in den aktiven Räumen erzeugt.
+   SHIP — lässt die Crew-Figuren in ihren Raum-Zonen
+   umherwandern (Top-Down: 2D-Bewegung zu Zufallszielen).
+   Liest die .runner-Elemente, die game.js je Raum erzeugt.
    ========================================================= */
 "use strict";
 
@@ -9,47 +9,63 @@
   const states = new WeakMap();
   let last = performance.now();
 
+  function pickTarget(s, w, h, rw, rh) {
+    s.tx = Math.random() * Math.max(1, w - rw);
+    s.ty = Math.random() * Math.max(1, h - rh);
+  }
+
   function frame(now) {
     const dt = Math.min(0.05, (now - last) / 1000);
     last = now;
 
-    document.querySelectorAll(".room.active .runner").forEach((r) => {
-      const floor = r.parentElement;
-      const fw = floor.clientWidth;
-      const rw = r.offsetWidth || 30;
-      if (!fw) return;
+    // Zonen-Maße einmal pro Frame cachen (kein Layout-Thrashing)
+    const zoneDim = new Map();
+
+    document.querySelectorAll(".region .runner").forEach((r) => {
+      const zone = r.parentElement;
+      let zd = zoneDim.get(zone);
+      if (!zd) { zd = { w: zone.clientWidth, h: zone.clientHeight }; zoneDim.set(zone, zd); }
+      const w = zd.w, h = zd.h;
+      if (!w || !h) return;
+      const rw = r.offsetWidth || 24, rh = r.offsetHeight || 40;
 
       let s = states.get(r);
       if (!s) {
         s = {
-          x: Math.random() * Math.max(1, fw - rw),
-          dir: Math.random() < 0.5 ? -1 : 1,
-          speed: 26 + Math.random() * 26,
-          t: Math.random() * 6,
-          pause: 0,
+          x: Math.random() * Math.max(1, w - rw),
+          y: Math.random() * Math.max(1, h - rh),
+          tx: 0, ty: 0, dir: 1,
+          speed: 22 + Math.random() * 20,
+          pause: 0, bobT: Math.random() * 6,
         };
+        pickTarget(s, w, h, rw, rh);
         states.set(r, s);
       }
 
-      s.t += dt;
-      // gelegentlich kurz stehen bleiben
       if (s.pause > 0) {
         s.pause -= dt;
       } else {
-        if (Math.random() < 0.004) { s.pause = 0.3 + Math.random() * 0.9; }
-        else if (Math.random() < 0.004) { s.dir *= -1; }
-        s.x += s.dir * s.speed * dt;
+        const dx = s.tx - s.x, dy = s.ty - s.y;
+        const dist = Math.hypot(dx, dy);
+        if (dist < 4) {
+          // Ziel erreicht: kurz verschnaufen, neues Ziel
+          if (Math.random() < 0.5) s.pause = 0.4 + Math.random() * 1.4;
+          pickTarget(s, w, h, rw, rh);
+        } else {
+          const step = Math.min(dist, s.speed * dt);
+          s.x += (dx / dist) * step;
+          s.y += (dy / dist) * step;
+          if (Math.abs(dx) > 2) s.dir = dx > 0 ? 1 : -1;
+          s.bobT += dt;
+        }
       }
 
-      const maxX = Math.max(0, fw - rw);
-      if (s.x <= 0) { s.x = 0; s.dir = 1; }
-      else if (s.x >= maxX) { s.x = maxX; s.dir = -1; }
-
-      // leichtes Lauf-Wippen, nur wenn in Bewegung
       const moving = s.pause <= 0;
-      const bob = moving ? Math.abs(Math.sin(s.t * 9)) * 2.5 : 0;
-      // dir = 1 -> nach rechts (Originalblick), dir = -1 -> spiegeln
-      r.style.transform = `translate(${s.x.toFixed(1)}px, ${(-bob).toFixed(1)}px) scaleX(${s.dir})`;
+      const bob = moving ? Math.abs(Math.sin(s.bobT * 9)) * 2 : 0;
+      r.style.transform =
+        `translate(${s.x.toFixed(1)}px, ${(s.y - bob).toFixed(1)}px) scaleX(${s.dir})`;
+      const z = Math.round(s.y); // weiter unten = weiter vorn
+      if (s.lastZ !== z) { r.style.zIndex = String(z); s.lastZ = z; }
     });
 
     requestAnimationFrame(frame);

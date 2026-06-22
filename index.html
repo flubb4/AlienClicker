@@ -8,9 +8,7 @@
 </head>
 <body>
   <!-- Hintergrund-Ebenen -->
-  <img class="bg-image" id="bgImage" src="assets/bg.png" alt="" draggable="false" onerror="this.remove()" />
   <div class="bg-glow"></div>
-  <div class="bg-fog"></div>
   <div class="scanlines"></div>
   <div class="vignette"></div>
   <div class="frame"></div>
@@ -41,9 +39,9 @@
     <div class="saved-hint" id="savedHint"></div>
   </aside>
 
-  <!-- ZENTRUM: Das Schiff -->
-  <main class="ship">
-    <div class="readout">
+  <!-- ZENTRUM: Deckplan -->
+  <main class="shipmap">
+    <div class="hud">
       <div class="credits" id="credits">0</div>
       <div class="credits-label">CREDITS</div>
       <div class="rate-chip" id="rate">0 / SEK</div>
@@ -55,7 +53,11 @@
         <div class="debt-bar"><span id="debtFill"></span></div>
       </div>
     </div>
-    <div class="rooms" id="rooms"></div>
+    <div class="ship-wrap" id="shipWrap">
+      <img class="ship-img" id="shipImg" src="assets/ship.png" alt="" draggable="false"
+           onerror="document.getElementById('shipWrap').classList.add('noship'); this.style.display='none';" />
+      <div class="deck" id="deck"></div>
+    </div>
   </main>
 
   <!-- Rechtes Panel: Crew + Systeme -->
