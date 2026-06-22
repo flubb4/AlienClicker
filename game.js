@@ -12,12 +12,12 @@
 // room = in welchem Raum des Deckplans die Figur läuft (siehe ROOMS).
 // Zuordnung/Reihenfolge/Rollen gern anpassen.
 const CREW = [
-  { id: "mae",      name: "Mae",      role: "Maschinistin",            room: "engine",  baseCost: 15,    rate: 0.2,  desc: "Hält die Triebwerke am Laufen." },
-  { id: "gustav",   name: "Gustav",   role: "Techniker",               room: "android", baseCost: 120,   rate: 1.5,  desc: "Wartet die Androiden." },
-  { id: "silas",    name: "Silas",    role: "Pilot",                   room: "bridge",  baseCost: 1300,  rate: 9,    desc: "Fliegt den Frachter durchs Nichts." },
-  { id: "scott",    name: "Scott",    role: "Sicherheitsoffizier",     room: "food",    baseCost: 14000, rate: 50,   desc: "Bewacht Fracht und Crew." },
+  { id: "mae",      name: "Mae",      role: "Wissenschaftsoffizierin", room: "muthur",  baseCost: 15,    rate: 0.2,  desc: "Überwacht MU/TH/UR und die Bordsysteme." },
+  { id: "gustav",   name: "Gustav",   role: "Pilot",                   room: "bridge",  baseCost: 120,   rate: 1.5,  desc: "Hält das Schiff auf Kurs." },
+  { id: "silas",    name: "Silas",    role: "Maschinist",              room: "engine",  baseCost: 1300,  rate: 9,    desc: "Hält die Triebwerke am Laufen." },
+  { id: "scott",    name: "Scott",    role: "Quartiermeister",         room: "food",    baseCost: 14000, rate: 50,   desc: "Verwaltet Vorräte und Fracht." },
   { id: "isabella", name: "Isabella", role: "Sanitäterin",             room: "medbay",  baseCost: 2e5,   rate: 300,  desc: "Hält die Crew am Leben." },
-  { id: "julian",   name: "Julian",   role: "Captain",                 room: "muthur",  baseCost: 3e6,   rate: 1800, desc: "Trägt die Schulden — und die Verantwortung." },
+  { id: "julian",   name: "Julian",   role: "Synthetik",               room: "android", baseCost: 3e6,   rate: 1800, desc: "Der Synthetik der Firma. Wartet im Android Bay." },
 ];
 
 // Räume des Deckplans. box = Lauf-Zone in % des Schiff-Bildes (l=links, t=oben, w=breite, h=höhe).
