@@ -785,13 +785,38 @@ function save(showHint = false) {
   } catch (err) { el.savedHint.textContent = "// FEHLER: Speichern fehlgeschlagen."; }
 }
 
+let saveWasReset = false; // true, wenn ein Stand durch einen globalen Reset verworfen wurde
+
+// Coole Begrüßungs-Übertragung beim ersten Laden / nach einem Reset
+function showIntro(wasReset) {
+  const ov = document.createElement("div");
+  ov.className = "intro";
+  ov.innerHTML = `
+    <div class="intro-box">
+      <div class="intro-corner tl"></div><div class="intro-corner br"></div>
+      <div class="intro-head"><span class="intro-logo">◢◤</span> WEYLAND-YUTANI</div>
+      <div class="intro-sub">PRIORITÄTS-ÜBERTRAGUNG · AZ-937 · USCSS »DRAGON'S DEBT«</div>
+      <div class="intro-body">
+        ${wasReset
+          ? `<p>» SYSTEM-DIREKTIVE EMPFANGEN.</p><p>Neue Vertragsperiode autorisiert. Alle vorherigen Salden wurden <b>annulliert</b>, eure Crew abgemustert. Das Schiff gehört wieder der Reederei.</p>`
+          : `<p>» WILLKOMMEN AN BORD DER <b>USCSS »DRAGON'S DEBT«</b>.</p><p>Der Frachter ist tief verschuldet. Eure Crew ist abgemustert — ihr fangt allein an.</p>`}
+        <p>Bedient das Brücken-Terminal, heuert Crew an, haltet die Systeme am Laufen — und <b>tilgt die Schulden</b>.</p>
+        <p class="intro-sign">— Die Firma dankt für Ihre Loyalität. <span class="intro-cursor">▮</span></p>
+      </div>
+      <button class="intro-btn" id="introBtn">SCHICHT ANTRETEN ▸</button>
+    </div>`;
+  document.body.appendChild(ov);
+  const close = () => { ov.classList.add("out"); setTimeout(() => ov.remove(), 450); };
+  ov.querySelector("#introBtn").addEventListener("click", close);
+}
+
 function load() {
   try {
     const raw = localStorage.getItem(SAVE_KEY);
     if (!raw) return false;
     const data = JSON.parse(raw);
     // Globaler Reset: alte Save-Version -> verwerfen, frisch starten
-    if ((data._rv || 0) < RESET_VERSION) { localStorage.removeItem(SAVE_KEY); return false; }
+    if ((data._rv || 0) < RESET_VERSION) { localStorage.removeItem(SAVE_KEY); saveWasReset = true; return false; }
     state.credits = data.credits || 0;
     state.totalEarned = data.totalEarned || 0;
     state.contractEarned = data.contractEarned || 0;
@@ -931,3 +956,6 @@ renderPerks();
 renderContract();
 renderAbilities();
 checkAchievements();
+
+// Begrüßungs-Übertragung beim ersten Laden bzw. nach einem globalen Reset
+if (!loaded) showIntro(saveWasReset);
