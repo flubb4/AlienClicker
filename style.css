@@ -246,6 +246,16 @@ img { -webkit-user-drag: none; user-select: none; }
 .admin button:hover { background: var(--amber); color: #04080a; }
 .admin-hint { font-family: var(--mono); font-size: 9px; color: var(--green-dim); letter-spacing: 1px; }
 
+/* ===== Kaufmengen-Selektor ===== */
+.buyamt { display: flex; gap: 5px; margin-bottom: 12px; }
+.buyamt.hidden { display: none; }
+.amt {
+  flex: 1; background: transparent; color: var(--green-dim); border: 1px solid var(--border);
+  border-radius: 8px; padding: 6px 0; font-family: var(--mono); font-size: 11px; cursor: pointer; transition: 0.14s;
+}
+.amt:hover { color: var(--green); border-color: var(--border-bright); }
+.amt.active { background: var(--amber); color: #04080a; font-weight: 700; border-color: var(--amber); box-shadow: 0 0 14px rgba(255,192,106,0.35); }
+
 /* ===== Crew-Meilensteine ===== */
 .ms-badge { margin-left: 6px; font-family: var(--mono); font-size: 11px; color: #04080a; background: var(--green-soft); border-radius: 6px; padding: 1px 6px; font-weight: 700; }
 .item-ms { grid-column: 2; font-family: var(--mono); font-size: 10px; color: var(--green-dim); margin-top: 2px; }

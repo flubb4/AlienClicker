@@ -198,17 +198,52 @@ el.deck.addEventListener("click", (ev) => {
 
 /* ---------- Kaufen ---------- */
 
+// Kaufmenge (Mengen-Selektor)
+const BUY_AMOUNTS = [1, 5, 10, 50, 100, "max"];
+let buyAmount = 1;
+
+// Anzahl + Gesamtkosten für die aktuell gewählte Kaufmenge eines Crewmitglieds
+function bulkInfo(c) {
+  const owned = state.crew[c.id];
+  if (buyAmount === "max") {
+    let count = 0, cost = 0;
+    while (count < 100000) {
+      const next = Math.ceil(c.baseCost * Math.pow(1.15, owned + count));
+      if (cost + next > state.credits) break;
+      cost += next; count++;
+    }
+    return { count, cost };
+  }
+  let cost = 0;
+  for (let k = 0; k < buyAmount; k++) cost += Math.ceil(c.baseCost * Math.pow(1.15, owned + k));
+  return { count: buyAmount, cost };
+}
+
 function buyCrew(c) {
-  const cost = crewCost(c);
-  if (state.credits < cost) return;
+  const { count, cost } = bulkInfo(c);
+  if (count < 1 || state.credits < cost) return;
+  const before = state.crew[c.id];
   state.credits -= cost;
-  state.crew[c.id]++;
-  if (state.crew[c.id] === 1) logMsg(`${c.name} (${c.role}) angeheuert. An Bord.`, true);
-  if (CREW_MILESTONES.includes(state.crew[c.id])) logMsg(`Meilenstein: ${c.name} ×${state.crew[c.id]} — Output verdoppelt!`, true);
+  state.crew[c.id] += count;
+  if (before === 0) logMsg(`${c.name} (${c.role}) angeheuert. An Bord.`, true);
+  CREW_MILESTONES.forEach(t => { if (before < t && state.crew[c.id] >= t) logMsg(`Meilenstein: ${c.name} ×${t} — Output verdoppelt!`, true); });
   renderDeck();
   renderShop();
   updateReadout();
   checkAchievements();
+}
+
+function renderBuyAmt() {
+  const box = document.getElementById("buyAmt");
+  if (!box) return;
+  box.innerHTML = "";
+  BUY_AMOUNTS.forEach(a => {
+    const b = document.createElement("button");
+    b.className = "amt" + (buyAmount === a ? " active" : "");
+    b.textContent = a === "max" ? "MAX" : "×" + a;
+    b.addEventListener("click", () => { buyAmount = a; renderBuyAmt(); renderShop(); });
+    box.appendChild(b);
+  });
 }
 
 function buyModule(e) {
@@ -268,10 +303,12 @@ function renderShop() {
   // Crew
   el.crewList.innerHTML = "";
   CREW.forEach((c, i) => {
-    const cost = crewCost(c);
     const unlocked = i === 0 || state.crew[CREW[i - 1].id] > 0 || state.crew[c.id] > 0;
     if (!unlocked) return;
-    const affordable = state.credits >= cost;
+    const info = bulkInfo(c);
+    const dispCount = info.count < 1 ? 1 : info.count;
+    const dispCost = info.count < 1 ? crewCost(c) : info.cost;
+    const affordable = info.count >= 1 && state.credits >= info.cost;
     const item = document.createElement("div");
     item.className = "item" + (affordable ? "" : " locked");
     const mult = crewMult(c.id);
@@ -283,7 +320,7 @@ function renderShop() {
         <div class="item-rate">${c.role} · +${fmt(c.rate * mult)} cr/s</div>
         ${next ? `<div class="item-ms">Bonus bei ${next} · ${state.crew[c.id]}/${next}</div>` : `<div class="item-ms">max. Bonus erreicht</div>`}
       </div>
-      <div class="item-cost"><span class="cost-val">${fmt(cost)}</span><span class="cost-lbl">CREDITS</span></div>
+      <div class="item-cost"><span class="cost-val">${fmt(dispCost)}</span><span class="cost-lbl">CREDITS${dispCount > 1 ? ` · ×${dispCount}` : ""}</span></div>
     `;
     item.addEventListener("click", () => buyCrew(c));
     el.crewList.appendChild(item);
@@ -326,7 +363,14 @@ function refreshAffordability() {
     const unlocked = i === 0 || state.crew[CREW[i - 1].id] > 0 || state.crew[c.id] > 0;
     if (!unlocked) return;
     const node = el.crewList.children[gi++];
-    if (node) node.classList.toggle("locked", state.credits < crewCost(c));
+    if (!node) return;
+    const info = bulkInfo(c);
+    node.classList.toggle("locked", info.count < 1 || state.credits < info.cost);
+    const cnt = info.count < 1 ? 1 : info.count;
+    const cv = node.querySelector(".cost-val");
+    if (cv) cv.textContent = fmt(info.count < 1 ? crewCost(c) : info.cost);
+    const cl = node.querySelector(".cost-lbl");
+    if (cl) cl.textContent = "CREDITS" + (cnt > 1 ? ` · ×${cnt}` : "");
   });
   MODULES.forEach((e, i) => {
     const node = el.moduleList.children[i];
@@ -537,6 +581,8 @@ document.querySelectorAll(".tab").forEach(tab => {
     tab.classList.add("active");
     const which = tab.dataset.tab;
     Object.entries(TAB_BODIES).forEach(([k, node]) => { if (node) node.classList.toggle("hidden", k !== which); });
+    const ba = document.getElementById("buyAmt");
+    if (ba) ba.classList.toggle("hidden", which !== "crew");
     if (which === "ach") renderAchievements();
   });
 });
@@ -602,6 +648,7 @@ const loaded = load();
 logMsg("DRAGON'S DEBT — Bordsysteme hochgefahren.");
 logMsg(loaded ? "Logbuch wiederhergestellt." : "Neue Schicht. Schuld offen: " + fmt(currentDebt()) + " Credits.");
 renderDeck();
+renderBuyAmt();
 renderShop();
 lastShopSignature = CREW.map(c => state.crew[c.id]).join(",") + "|" + MODULES.map(e => state.modules[e.id] ? 1 : 0).join(",");
 updateReadout();
