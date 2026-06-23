@@ -677,7 +677,7 @@ function spawnFacehugger() {
   if (document.querySelector(".facehugger")) return;
   const fh = document.createElement("button");
   fh.className = "facehugger";
-  fh.textContent = "🕷️";
+  fh.innerHTML = '<img src="assets/facehugger.png" alt="" draggable="false">';
   fh.title = "Fangen!";
   const fromLeft = Math.random() < 0.5;
   fh.style.top = (28 + Math.random() * 48) + "vh";
