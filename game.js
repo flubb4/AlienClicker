@@ -679,14 +679,38 @@ function spawnFacehugger() {
   fh.className = "facehugger";
   fh.innerHTML = '<img src="assets/facehugger.png" alt="" draggable="false">';
   fh.title = "Fangen!";
-  const fromLeft = Math.random() < 0.5;
-  fh.style.top = (28 + Math.random() * 48) + "vh";
-  fh.style.left = fromLeft ? "-70px" : "calc(100vw + 70px)";
   document.body.appendChild(fh);
-  const dur = 9000;
-  setTimeout(() => { fh.style.transition = `left ${dur}ms linear`; fh.style.left = fromLeft ? "calc(100vw + 70px)" : "-70px"; }, 30);
-  const removeT = setTimeout(() => fh.remove(), dur + 300);
-  fh.addEventListener("click", () => { clearTimeout(removeT); catchFacehugger(fh); });
+
+  const size = 78;
+  // Bewegungsfläche = das Schiff (Deck), sonst Fallback Viewport
+  const area = () => {
+    const d = document.getElementById("deck");
+    const r = (d && d.clientWidth) ? d.getBoundingClientRect() : { left: 40, top: 80, width: innerWidth - 80, height: innerHeight - 120 };
+    return r;
+  };
+  const b0 = area();
+  let x = b0.left + Math.random() * Math.max(1, b0.width - size);
+  let y = b0.top + Math.random() * Math.max(1, b0.height - size);
+  let tx = x, ty = y;
+  const pick = () => { const b = area(); tx = b.left + Math.random() * Math.max(1, b.width - size); ty = b.top + Math.random() * Math.max(1, b.height - size); };
+  pick();
+  fh.style.left = x.toFixed(1) + "px"; fh.style.top = y.toFixed(1) + "px";
+
+  const life = 10000 + Math.random() * 5000;   // 10–15 s herumkrabbeln
+  const start = performance.now();
+  let last = start, leaving = false, caught = false, raf = 0;
+  function step(now) {
+    const dt = Math.min(0.05, (now - last) / 1000); last = now;
+    if (!leaving && now - start > life) { leaving = true; ty = area().top - size * 3; tx = x; } // nach oben wegfliegen
+    const dx = tx - x, dy = ty - y, dist = Math.hypot(dx, dy);
+    const sp = leaving ? 460 : 150;
+    if (dist < 6) { if (leaving) { fh.remove(); return; } pick(); }
+    else { const s = Math.min(dist, sp * dt); x += dx / dist * s; y += dy / dist * s; }
+    fh.style.left = x.toFixed(1) + "px"; fh.style.top = y.toFixed(1) + "px";
+    raf = requestAnimationFrame(step);
+  }
+  raf = requestAnimationFrame(step);
+  fh.addEventListener("click", () => { if (caught) return; caught = true; cancelAnimationFrame(raf); catchFacehugger(fh); });
 }
 
 function catchFacehugger(fh) {
