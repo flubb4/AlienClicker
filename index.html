@@ -28,6 +28,7 @@
         <span class="credits" id="credits">0</span>
         <span class="credits-label">CREDITS · <span id="rate">0 / SEK</span></span>
       </div>
+      <span class="buff-chip" id="buffChip"></span>
       <div class="debt">
         <div class="debt-head">
           <span class="debt-label">SCHULDEN-TILGUNG</span>
@@ -69,13 +70,16 @@
       <button class="tab active" data-tab="crew">Crew</button>
       <button class="tab" data-tab="modules">Systeme</button>
       <button class="tab" data-tab="ach">Erfolge</button>
+      <button class="tab" data-tab="veteran">Veteran</button>
     </div>
     <div class="buyamt" id="buyAmt"></div>
     <div class="tab-body" id="crewList"></div>
     <div class="tab-body hidden" id="moduleList"></div>
     <div class="tab-body hidden" id="achList"></div>
+    <div class="tab-body hidden" id="perkList"></div>
   </aside>
 
+  <div class="ability-bar" id="abilityBar"></div>
   <div class="toasts" id="toasts"></div>
 
   <script src="game.js"></script>

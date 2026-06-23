@@ -286,6 +286,40 @@ img { -webkit-user-drag: none; user-select: none; }
 .toast-title { font-family: var(--mono); font-size: 12px; font-weight: 700; color: var(--amber); letter-spacing: 1px; }
 .toast-sub { font-size: 11px; color: var(--green-dim); margin-top: 2px; }
 
+/* ===== Crew-Upgrades (in Crew-Karten) ===== */
+.crew-ups { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 6px; }
+.cup { font-family: var(--mono); font-size: 10px; color: var(--amber); background: rgba(255,192,106,0.08); border: 1px solid rgba(255,192,106,0.35); border-radius: 7px; padding: 4px 7px; cursor: pointer; transition: 0.12s; }
+.cup:hover { background: var(--amber); color: #04080a; }
+.cup.locked { opacity: 0.5; color: var(--red); border-color: rgba(255,107,107,0.35); cursor: not-allowed; }
+
+/* ===== Perks (Veteran-Tab) ===== */
+.item.perk { grid-template-columns: 1fr auto; }
+.item.perk .item-info { grid-column: 1; }
+.item.perk .item-cost { grid-row: 1; grid-column: 2; }
+.item.perk .cost-val, .item.perk .cost-lbl { color: var(--amber); }
+
+/* 4 Tabs: etwas kompakter */
+.tabs .tab { letter-spacing: 1px; padding: 9px 4px; }
+
+/* ===== Buff-Chip (HUD) ===== */
+.buff-chip { display: none; font-family: var(--mono); font-size: 13px; font-weight: 700; color: #04080a; background: linear-gradient(90deg,#ff9a3c,#ffd76a); border-radius: 999px; padding: 4px 12px; box-shadow: 0 0 16px rgba(255,154,60,0.6); animation: buffpulse 1s ease-in-out infinite; }
+.buff-chip.on { display: inline-block; }
+@keyframes buffpulse { 0%,100%{transform:scale(1);} 50%{transform:scale(1.08);} }
+
+/* ===== Fähigkeiten-Leiste ===== */
+.ability-bar { position: fixed; bottom: 14px; left: 50%; transform: translateX(-50%); z-index: 55; display: flex; gap: 10px; }
+.ability { position: relative; width: 54px; height: 54px; border-radius: 12px; overflow: hidden; padding: 0; cursor: pointer; background: rgba(8,16,11,0.9); border: 1px solid var(--border); transition: 0.14s; }
+.ability img { width: 100%; height: 100%; object-fit: cover; object-position: top center; filter: grayscale(0.5) brightness(0.65); }
+.ability.ready { border-color: var(--amber); box-shadow: 0 0 16px rgba(255,192,106,0.5); animation: buffpulse 1.6s ease-in-out infinite; }
+.ability.ready img { filter: none; }
+.ability:hover { transform: translateY(-3px); }
+.ab-cd { position: absolute; left: 0; right: 0; bottom: 0; height: 0; background: rgba(0,0,0,0.72); color: var(--green-soft); font-family: var(--mono); font-size: 12px; display: grid; place-items: center; }
+.ab-name { position: absolute; top: 2px; left: 0; right: 0; font-family: var(--mono); font-size: 7px; letter-spacing: 1px; text-align: center; color: #fff; text-shadow: 0 0 4px #000; }
+
+/* ===== Streunender Facehugger ===== */
+.facehugger { position: fixed; z-index: 150; width: 56px; height: 56px; font-size: 32px; line-height: 56px; text-align: center; background: radial-gradient(circle, rgba(120,255,150,0.45), transparent 70%); border: none; cursor: pointer; filter: drop-shadow(0 0 12px rgba(120,255,150,0.85)); animation: fhbob 0.45s ease-in-out infinite; }
+@keyframes fhbob { 0%,100%{transform:translateY(0) rotate(-6deg);} 50%{transform:translateY(-6px) rotate(6deg);} }
+
 /* ===== Responsive ===== */
 @media (max-width: 1180px) {
   body { overflow-y: auto; }

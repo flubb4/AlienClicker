@@ -73,6 +73,36 @@ const ACHIEVEMENTS = [
   { id: "prestige5",  name: "Legende der Reederei",   desc: "Schließe 5 Verträge ab.",              cond: () => state.prestiges >= 5 },
 ];
 
+// Veteranen-Perks: mit Dienstmarken gekauft, bleiben über Verträge hinweg.
+const PERKS = [
+  { id: "eff",    name: "Effizienz-Protokolle",   desc: "+20 % globale Produktion je Stufe.",          base: 1, max: 25 },
+  { id: "click",  name: "Signal-Verstärker",      desc: "Klickkraft ×2 je Stufe.",                     base: 2, max: 12 },
+  { id: "haggle", name: "Harte Verhandlung",      desc: "−4 % Crew-Kosten je Stufe.",                  base: 2, max: 12 },
+  { id: "cargo",  name: "Vorschuss der Reederei", desc: "Startkapital nach jedem Vertrag (×10/Stufe).", base: 3, max: 8 },
+  { id: "cryo",   name: "Cryo-Optimierung",       desc: "Offline-Ertrag: 16 h Cap & 75 % Rate.",       base: 8, max: 1 },
+  { id: "bait",   name: "Köder-Protokoll",        desc: "Facehugger öfter & +25 % Beute je Stufe.",    base: 6, max: 5 },
+];
+
+// Individuelle Crew-Upgrades: mit Credits gekauft (pro Vertrag), multiplizieren den Output dieser Figur.
+const CREW_UPGRADES = {
+  mae:      [ { id: "mae1", req: 10, mult: 3, name: "MU/TH/UR-Overclock" }, { id: "mae2", req: 50, mult: 3, name: "Datenkern-Tuning" }, { id: "mae3", req: 150, mult: 4, name: "Quanten-Routinen" } ],
+  gustav:   [ { id: "gus1", req: 10, mult: 3, name: "Flug-Assistent" },     { id: "gus2", req: 50, mult: 3, name: "Trägheitsdämpfer" },  { id: "gus3", req: 150, mult: 4, name: "Sprung-Kalibrierung" } ],
+  silas:    [ { id: "sil1", req: 10, mult: 3, name: "Triebwerks-Tuning" },  { id: "sil2", req: 50, mult: 3, name: "Plasma-Injektoren" }, { id: "sil3", req: 150, mult: 4, name: "Reaktor-Übertaktung" } ],
+  scott:    [ { id: "sco1", req: 10, mult: 3, name: "Lager-Optimierung" },  { id: "sco2", req: 50, mult: 3, name: "Automatik-Greifer" }, { id: "sco3", req: 150, mult: 4, name: "Frachtdrohnen" } ],
+  isabella: [ { id: "isa1", req: 10, mult: 3, name: "Med-Scanner" },        { id: "isa2", req: 50, mult: 3, name: "Auto-Diagnose" },     { id: "isa3", req: 150, mult: 4, name: "Nano-Medizin" } ],
+  julian:   [ { id: "jul1", req: 10, mult: 3, name: "Verhaltens-Update" },  { id: "jul2", req: 50, mult: 3, name: "Kampf-Protokoll" },   { id: "jul3", req: 150, mult: 4, name: "Spezial-Direktive" } ],
+};
+
+// Aktive Crew-Fähigkeiten: temporärer Produktions-Buff mit Cooldown (Sekunden). req = nötige Stückzahl.
+const ABILITIES = {
+  silas:    { name: "Vollschub",     req: 5,  mult: 5, dur: 15, cd: 150, desc: "+400 % Produktion (15 s)" },
+  isabella: { name: "Notversorgung", req: 5,  mult: 3, dur: 30, cd: 180, desc: "+200 % Produktion (30 s)" },
+  mae:      { name: "Systemanalyse", req: 5,  mult: 4, dur: 20, cd: 200, desc: "+300 % Produktion (20 s)" },
+  gustav:   { name: "Autopilot",     req: 10, mult: 6, dur: 12, cd: 220, desc: "+500 % Produktion (12 s)" },
+  scott:    { name: "Inventur",      req: 10, mult: 4, dur: 25, cd: 210, desc: "+300 % Produktion (25 s)" },
+  julian:   { name: "Spezial-Order", req: 10, mult: 8, dur: 10, cd: 300, desc: "+700 % Produktion (10 s)" },
+};
+
 /* ---------- Spielzustand ---------- */
 
 let state = {
@@ -86,6 +116,10 @@ let state = {
   achievements: {},    // id -> true
   dienstmarken: 0,     // Prestige-Währung (permanenter Bonus)
   prestiges: 0,        // abgeschlossene Verträge
+  perks: {},           // perkId -> Stufe (permanent)
+  crewUpgrades: {},    // upgradeId -> true (pro Vertrag)
+  buffs: [],           // temporäre Produktions-Buffs {mult, until}
+  cooldowns: {},       // crewId -> Timestamp bis Fähigkeit wieder bereit
 };
 CREW.forEach(c => (state.crew[c.id] = 0));
 
@@ -101,12 +135,12 @@ function fmt(n) {
 }
 
 function crewCost(c) {
-  return Math.ceil(c.baseCost * Math.pow(1.15, state.crew[c.id]));
+  return Math.ceil(c.baseCost * Math.pow(1.15, state.crew[c.id]) * crewCostPerkMult());
 }
 function crewAboard() { return CREW.reduce((s, c) => s + (state.crew[c.id] > 0 ? 1 : 0), 0); }
 function achCount() { return Object.keys(state.achievements).length; }
-// Globaler Produktions-Multiplikator aus Erfolgen + Dienstmarken
-function globalMult() { return (1 + ACH_BONUS * achCount()) * (1 + TOKEN_BONUS * state.dienstmarken); }
+// Globaler Produktions-Multiplikator: Erfolge + Dienstmarken + Effizienz-Perk
+function globalMult() { return (1 + ACH_BONUS * achCount()) * (1 + TOKEN_BONUS * state.dienstmarken) * prodPerkMult(); }
 // Output-Multiplikator eines Crewmitglieds durch Stückzahl-Meilensteine
 function crewMult(id) { let m = 1; for (const t of CREW_MILESTONES) if (state.crew[id] >= t) m *= 2; return m; }
 function nextCrewMilestone(id) { const n = state.crew[id]; for (const t of CREW_MILESTONES) if (n < t) return t; return null; }
@@ -116,14 +150,72 @@ function clickMultiplier() {
   MODULES.forEach(e => { if (state.modules[e.id]) m *= e.mult; });
   return m;
 }
-function clickPower() { return BASE_CLICK * clickMultiplier() * globalMult(); }
+function clickPower() { return BASE_CLICK * clickMultiplier() * clickPerkMult() * globalMult() * buffMult(); }
 function perSecond() {
-  return CREW.reduce((sum, c) => sum + c.rate * state.crew[c.id] * crewMult(c.id), 0) * globalMult();
+  const raw = CREW.reduce((sum, c) => sum + c.rate * state.crew[c.id] * crewMult(c.id) * crewUpgradeMult(c.id), 0);
+  return raw * globalMult() * synergyMult() * buffMult();
 }
 
 function currentDebt() { return DEBT_BASE * Math.pow(DEBT_GROWTH, state.prestiges); }
 function prestigeGain() { return Math.floor(Math.sqrt(state.contractEarned / 1e6)); }
 function canPrestige() { return state.contractEarned >= currentDebt(); }
+
+/* ---------- Veteranen-Perks ---------- */
+function perkLevel(id) { return state.perks[id] || 0; }
+function perkCost(id) { const p = PERKS.find(x => x.id === id); return p.base * (perkLevel(id) + 1); }
+function buyPerk(id) {
+  const p = PERKS.find(x => x.id === id); const lvl = perkLevel(id);
+  if (lvl >= p.max) return;
+  const cost = perkCost(id);
+  if (state.dienstmarken < cost) return;
+  state.dienstmarken -= cost; state.perks[id] = lvl + 1;
+  logMsg(`Veteranen-Perk: ${p.name} → Stufe ${lvl + 1}.`, true);
+  renderPerks(); renderContract(); updateReadout();
+}
+function prodPerkMult() { return 1 + 0.20 * perkLevel("eff"); }
+function clickPerkMult() { return Math.pow(2, perkLevel("click")); }
+function crewCostPerkMult() { return Math.max(0.2, 1 - 0.04 * perkLevel("haggle")); }
+function startCredits() { return perkLevel("cargo") > 0 ? 1000 * Math.pow(10, perkLevel("cargo") - 1) : 0; }
+
+/* ---------- Raum-Synergien ---------- */
+function synergyMult() {
+  let m = 1, staffed = 0;
+  CREW.forEach(c => { const n = state.crew[c.id]; if (n > 0) { staffed++; m *= 1 + 0.05 + 0.05 * Math.floor(n / 25); } });
+  if (staffed === CREW.length) m *= 1.25; // alle Räume besetzt
+  return m;
+}
+
+/* ---------- Crew-Upgrades ---------- */
+function crewUpgradeMult(id) { let m = 1; (CREW_UPGRADES[id] || []).forEach(u => { if (state.crewUpgrades[u.id]) m *= u.mult; }); return m; }
+function crewUpgradeCost(crewId, u) { const c = CREW.find(x => x.id === crewId); return Math.ceil(c.baseCost * Math.pow(1.15, u.req) * 12); }
+function buyCrewUpgrade(crewId, u) {
+  if (state.crewUpgrades[u.id]) return;
+  const cost = crewUpgradeCost(crewId, u);
+  if (state.credits < cost) return;
+  state.credits -= cost; state.crewUpgrades[u.id] = true;
+  const c = CREW.find(x => x.id === crewId);
+  logMsg(`Upgrade: ${c.name} — ${u.name} (×${u.mult}).`, true);
+  renderShop(); updateReadout(); checkAchievements();
+}
+
+/* ---------- Buffs & Fähigkeiten ---------- */
+function buffMult() {
+  const now = Date.now();
+  if (state.buffs && state.buffs.length) state.buffs = state.buffs.filter(b => b.until > now);
+  let m = 1; (state.buffs || []).forEach(b => m *= b.mult); return m;
+}
+function abilityReady(crewId) { return Date.now() >= (state.cooldowns[crewId] || 0); }
+function useAbility(crewId) {
+  const a = ABILITIES[crewId];
+  if (!a || state.crew[crewId] < a.req || !abilityReady(crewId)) return;
+  const now = Date.now();
+  state.buffs = state.buffs || [];
+  state.buffs.push({ mult: a.mult, until: now + a.dur * 1000, src: crewId });
+  state.cooldowns[crewId] = now + a.cd * 1000;
+  const c = CREW.find(x => x.id === crewId);
+  logMsg(`${c.name} setzt „${a.name}" ein! ${a.desc}`, true);
+  renderAbilities(); updateReadout();
+}
 
 /* ---------- DOM-Referenzen ---------- */
 
@@ -134,8 +226,11 @@ const el = {
   crewList: document.getElementById("crewList"),
   moduleList: document.getElementById("moduleList"),
   achList: document.getElementById("achList"),
+  perkList: document.getElementById("perkList"),
   contract: document.getElementById("contract"),
   toasts: document.getElementById("toasts"),
+  abilityBar: document.getElementById("abilityBar"),
+  buffChip: document.getElementById("buffChip"),
   log: document.getElementById("log"),
   stats: document.getElementById("stats"),
   savedHint: document.getElementById("savedHint"),
@@ -205,17 +300,18 @@ let buyAmount = 1;
 // Anzahl + Gesamtkosten für die aktuell gewählte Kaufmenge eines Crewmitglieds
 function bulkInfo(c) {
   const owned = state.crew[c.id];
+  const cm = crewCostPerkMult();
   if (buyAmount === "max") {
     let count = 0, cost = 0;
     while (count < 100000) {
-      const next = Math.ceil(c.baseCost * Math.pow(1.15, owned + count));
+      const next = Math.ceil(c.baseCost * Math.pow(1.15, owned + count) * cm);
       if (cost + next > state.credits) break;
       cost += next; count++;
     }
     return { count, cost };
   }
   let cost = 0;
-  for (let k = 0; k < buyAmount; k++) cost += Math.ceil(c.baseCost * Math.pow(1.15, owned + k));
+  for (let k = 0; k < buyAmount; k++) cost += Math.ceil(c.baseCost * Math.pow(1.15, owned + k) * cm);
   return { count: buyAmount, cost };
 }
 
@@ -229,6 +325,7 @@ function buyCrew(c) {
   CREW_MILESTONES.forEach(t => { if (before < t && state.crew[c.id] >= t) logMsg(`Meilenstein: ${c.name} ×${t} — Output verdoppelt!`, true); });
   renderDeck();
   renderShop();
+  renderAbilities();
   updateReadout();
   checkAchievements();
 }
@@ -313,16 +410,28 @@ function renderShop() {
     item.className = "item" + (affordable ? "" : " locked");
     const mult = crewMult(c.id);
     const next = nextCrewMilestone(c.id);
+    const ups = (CREW_UPGRADES[c.id] || []).filter(u => !state.crewUpgrades[u.id] && state.crew[c.id] >= u.req);
+    const upsHtml = ups.length
+      ? `<div class="crew-ups">${ups.map(u => `<button class="cup${state.credits >= crewUpgradeCost(c.id, u) ? "" : " locked"}" data-uid="${u.id}">⚡ ${u.name} · ${fmt(crewUpgradeCost(c.id, u))}</button>`).join("")}</div>`
+      : "";
     item.innerHTML = `
       <div class="thumb"><span class="thumb-fallback">${c.name[0]}</span><img src="assets/crew/${c.id}.png" alt="" onerror="this.remove()"></div>
       <div class="item-info">
         <div class="item-name">${c.name}<span class="count">×${state.crew[c.id]}</span>${mult > 1 ? `<span class="ms-badge">×${mult}</span>` : ""}</div>
-        <div class="item-rate">${c.role} · +${fmt(c.rate * mult)} cr/s</div>
+        <div class="item-rate">${c.role} · +${fmt(c.rate * mult * crewUpgradeMult(c.id))} cr/s</div>
         ${next ? `<div class="item-ms">Bonus bei ${next} · ${state.crew[c.id]}/${next}</div>` : `<div class="item-ms">max. Bonus erreicht</div>`}
+        ${upsHtml}
       </div>
       <div class="item-cost"><span class="cost-val">${fmt(dispCost)}</span><span class="cost-lbl">CREDITS${dispCount > 1 ? ` · ×${dispCount}` : ""}</span></div>
     `;
     item.addEventListener("click", () => buyCrew(c));
+    item.querySelectorAll(".cup").forEach(btn => {
+      btn.addEventListener("click", (ev) => {
+        ev.stopPropagation();
+        const u = (CREW_UPGRADES[c.id] || []).find(x => x.id === btn.dataset.uid);
+        if (u) buyCrewUpgrade(c.id, u);
+      });
+    });
     el.crewList.appendChild(item);
   });
 
@@ -351,6 +460,11 @@ function updateReadout() {
   el.rate.textContent = fmt(perSecond()) + " / SEK";
   const cp = document.getElementById("clickPower");
   if (cp) cp.textContent = fmt(clickPower());
+  if (el.buffChip) {
+    const b = buffMult();
+    if (b > 1) { el.buffChip.textContent = `🔥 ×${Number.isInteger(b) ? b : b.toFixed(1)}`; el.buffChip.classList.add("on"); }
+    else el.buffChip.classList.remove("on");
+  }
   refreshAffordability();
 }
 
@@ -481,16 +595,122 @@ function doPrestige() {
   if (!confirm(`Neuen Vertrag unterschreiben?\n\nDu erhältst ${gain} Dienstmarken (+${gain * Math.round(TOKEN_BONUS * 100)}% permanente Produktion).\nCredits, Crew und Systeme werden zurückgesetzt. Erfolge & Dienstmarken bleiben.`)) return;
   state.dienstmarken += gain;
   state.prestiges++;
-  state.credits = 0;
   state.contractEarned = 0;
   CREW.forEach(c => (state.crew[c.id] = 0));
   state.modules = {};
+  state.crewUpgrades = {};
+  state.buffs = [];
+  state.cooldowns = {};
+  state.credits = startCredits();
   lastMilestone = -1;
   lastShopSignature = "";
   logMsg(`NEUER VERTRAG #${state.prestiges + 1}. +${gain} Dienstmarken. Neue Schuld: ${fmt(currentDebt())} cr.`, true);
   el.stageFlash.classList.remove("on"); void el.stageFlash.offsetWidth; el.stageFlash.classList.add("on");
-  renderDeck(); renderShop(); renderContract(); renderDebt(); updateReadout();
+  renderDeck(); renderShop(); renderAbilities(); renderContract(); renderDebt(); updateReadout();
   saveWithStamp(false);
+}
+
+/* ---------- Veteranen-Shop (Perks) ---------- */
+
+function renderPerks() {
+  if (!el.perkList) return;
+  let html = `<div class="ach-head">Dienstmarken: ${fmt(state.dienstmarken)} · permanent über alle Verträge</div>`;
+  PERKS.forEach(p => {
+    const lvl = perkLevel(p.id), maxed = lvl >= p.max, cost = perkCost(p.id);
+    const cls = maxed ? "maxed" : (state.dienstmarken >= cost ? "" : "locked");
+    html += `<div class="item perk ${cls}" data-perk="${p.id}">
+      <div class="item-info">
+        <div class="item-name">${p.name} <span class="count">Stufe ${lvl}${p.max > 1 ? `/${p.max}` : ""}</span></div>
+        <div class="item-desc">${p.desc}</div>
+      </div>
+      <div class="item-cost">${maxed ? '<span class="cost-val">MAX</span>' : `<span class="cost-val">${fmt(cost)}</span><span class="cost-lbl">MARKEN</span>`}</div>
+    </div>`;
+  });
+  el.perkList.innerHTML = html;
+  el.perkList.querySelectorAll(".perk").forEach(node => {
+    if (!node.classList.contains("maxed")) node.addEventListener("click", () => buyPerk(node.dataset.perk));
+  });
+}
+
+/* ---------- Fähigkeiten-Leiste ---------- */
+
+function renderAbilities() {
+  const bar = el.abilityBar;
+  if (!bar) return;
+  bar.innerHTML = "";
+  Object.keys(ABILITIES).forEach(crewId => {
+    const a = ABILITIES[crewId];
+    if (state.crew[crewId] < a.req) return;
+    const btn = document.createElement("button");
+    btn.className = "ability";
+    btn.dataset.crew = crewId;
+    btn.title = `${a.name} — ${a.desc}`;
+    btn.innerHTML = `<img src="assets/crew/${crewId}.png" alt="" draggable="false" onerror="this.remove()"><span class="ab-cd"></span><span class="ab-name">${a.name}</span>`;
+    btn.addEventListener("click", () => useAbility(crewId));
+    bar.appendChild(btn);
+  });
+  updateAbilityCooldowns();
+}
+
+function updateAbilityCooldowns() {
+  const bar = el.abilityBar;
+  if (!bar) return;
+  const now = Date.now();
+  [...bar.children].forEach(btn => {
+    const crewId = btn.dataset.crew;
+    const cd = ABILITIES[crewId].cd;
+    const remain = Math.max(0, ((state.cooldowns[crewId] || 0) - now) / 1000);
+    const ov = btn.querySelector(".ab-cd");
+    if (remain > 0) {
+      btn.classList.remove("ready");
+      if (ov) { ov.textContent = Math.ceil(remain) + "s"; ov.style.height = Math.min(100, remain / cd * 100) + "%"; }
+    } else {
+      btn.classList.add("ready");
+      if (ov) { ov.textContent = ""; ov.style.height = "0%"; }
+    }
+  });
+}
+
+/* ---------- Streunender Facehugger ---------- */
+
+function spawnFacehugger() {
+  if (document.querySelector(".facehugger")) return;
+  const fh = document.createElement("button");
+  fh.className = "facehugger";
+  fh.textContent = "🕷️";
+  fh.title = "Fangen!";
+  const fromLeft = Math.random() < 0.5;
+  fh.style.top = (28 + Math.random() * 48) + "vh";
+  fh.style.left = fromLeft ? "-70px" : "calc(100vw + 70px)";
+  document.body.appendChild(fh);
+  const dur = 9000;
+  setTimeout(() => { fh.style.transition = `left ${dur}ms linear`; fh.style.left = fromLeft ? "calc(100vw + 70px)" : "-70px"; }, 30);
+  const removeT = setTimeout(() => fh.remove(), dur + 300);
+  fh.addEventListener("click", () => { clearTimeout(removeT); catchFacehugger(fh); });
+}
+
+function catchFacehugger(fh) {
+  fh.remove();
+  const rewardMul = 1 + 0.25 * perkLevel("bait");
+  if (Math.random() < 0.35) {
+    const mult = 7, dur = 15;
+    state.buffs = state.buffs || [];
+    state.buffs.push({ mult, until: Date.now() + dur * 1000, src: "facehugger" });
+    logMsg(`Facehugger gefangen! FRENZY ×${mult} für ${dur}s.`, true);
+    showToast("Facehugger gefangen!", `FRENZY ×${mult} für ${dur} Sekunden`);
+  } else {
+    const reward = Math.floor((Math.max(clickPower() * 50, perSecond() * 60) + 50) * rewardMul);
+    state.credits += reward; state.totalEarned += reward; state.contractEarned += reward;
+    logMsg(`Facehugger gefangen! +${fmt(reward)} Credits.`, true);
+    showToast("Facehugger gefangen!", `+${fmt(reward)} Credits`);
+  }
+  updateReadout();
+}
+
+function scheduleFacehugger() {
+  const base = Math.max(45000, 120000 - perkLevel("bait") * 12000);
+  const delay = base * 0.6 + Math.random() * base * 0.8;
+  setTimeout(() => { spawnFacehugger(); scheduleFacehugger(); }, delay);
 }
 
 /* ---------- Game-Loop ---------- */
@@ -509,6 +729,8 @@ setInterval(renderStats, 500);
 setInterval(renderDebt, 500);
 setInterval(renderContract, 700);
 setInterval(checkAchievements, 1000);
+setInterval(updateAbilityCooldowns, 250);
+scheduleFacehugger();
 
 setInterval(() => {
   const m = LOG_FLAVOR[logCount % LOG_FLAVOR.length];
@@ -543,11 +765,16 @@ function load() {
     state.achievements = data.achievements || {};
     state.dienstmarken = data.dienstmarken || 0;
     state.prestiges = data.prestiges || 0;
+    state.perks = data.perks || {};
+    state.crewUpgrades = data.crewUpgrades || {};
+    state.buffs = []; state.cooldowns = {};
 
     const offlineMs = Date.now() - (data._savedAt || Date.now());
     if (offlineMs > 10000) {
-      const cappedSec = Math.min(offlineMs / 1000, 8 * 3600);
-      const earned = perSecond() * cappedSec * 0.5;
+      const capH = perkLevel("cryo") > 0 ? 16 : 8;
+      const rate = perkLevel("cryo") > 0 ? 0.75 : 0.5;
+      const cappedSec = Math.min(offlineMs / 1000, capH * 3600);
+      const earned = perSecond() * cappedSec * rate;
       if (earned > 0) {
         state.credits += earned; state.totalEarned += earned; state.contractEarned += earned;
         state._cryo = true;
@@ -562,11 +789,11 @@ document.getElementById("saveBtn").addEventListener("click", () => save(true));
 document.getElementById("resetBtn").addEventListener("click", () => {
   if (!confirm("RESET: Logbuch und Fortschritt unwiderruflich löschen?")) return;
   localStorage.removeItem(SAVE_KEY);
-  state = { credits: 0, totalEarned: 0, contractEarned: 0, totalClicks: 0, startTime: Date.now(), crew: {}, modules: {}, achievements: {}, dienstmarken: 0, prestiges: 0 };
+  state = { credits: 0, totalEarned: 0, contractEarned: 0, totalClicks: 0, startTime: Date.now(), crew: {}, modules: {}, achievements: {}, dienstmarken: 0, prestiges: 0, perks: {}, crewUpgrades: {}, buffs: [], cooldowns: {} };
   CREW.forEach(c => (state.crew[c.id] = 0));
   lastShopSignature = ""; lastMilestone = -1;
   logMsg("Schiffssysteme zurückgesetzt.", true);
-  renderDeck(); renderShop(); renderAchievements(); renderContract(); renderDebt(); updateReadout();
+  renderDeck(); renderShop(); renderAbilities(); renderAchievements(); renderPerks(); renderContract(); renderDebt(); updateReadout();
 });
 
 function saveWithStamp(showHint) { state._savedAt = Date.now(); save(showHint); }
@@ -574,7 +801,7 @@ setInterval(() => saveWithStamp(false), 15000);
 window.addEventListener("beforeunload", () => saveWithStamp(false));
 
 // Tab-Umschaltung
-const TAB_BODIES = { crew: el.crewList, modules: el.moduleList, ach: el.achList };
+const TAB_BODIES = { crew: el.crewList, modules: el.moduleList, ach: el.achList, veteran: el.perkList };
 document.querySelectorAll(".tab").forEach(tab => {
   tab.addEventListener("click", () => {
     document.querySelectorAll(".tab").forEach(t => t.classList.remove("active"));
@@ -584,6 +811,7 @@ document.querySelectorAll(".tab").forEach(tab => {
     const ba = document.getElementById("buyAmt");
     if (ba) ba.classList.toggle("hidden", which !== "crew");
     if (which === "ach") renderAchievements();
+    if (which === "veteran") renderPerks();
   });
 });
 
@@ -655,5 +883,7 @@ updateReadout();
 renderStats();
 renderDebt();
 renderAchievements();
+renderPerks();
 renderContract();
+renderAbilities();
 checkAchievements();
