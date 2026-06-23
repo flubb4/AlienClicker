@@ -157,7 +157,11 @@ function perSecond() {
 }
 
 function currentDebt() { return DEBT_BASE * Math.pow(DEBT_GROWTH, state.prestiges); }
-function prestigeGain() { return Math.floor(Math.sqrt(state.contractEarned / 1e6)); }
+// Marken wachsen logarithmisch mit dem Vertragsumsatz -> linear pro Vertrag statt exponentiell.
+function prestigeGain() {
+  if (state.contractEarned < 10) return 0;
+  return Math.max(1, Math.floor((Math.log10(state.contractEarned) - 7) * 3));
+}
 function canPrestige() { return state.contractEarned >= currentDebt(); }
 
 /* ---------- Veteranen-Perks ---------- */
@@ -302,17 +306,19 @@ let buyAmount = 1;
 function bulkInfo(c) {
   const owned = state.crew[c.id];
   const cm = crewCostPerkMult();
+  const r = 1.15;
+  const A = c.baseCost * cm * Math.pow(r, owned); // Kosten der nächsten Einheit
   if (buyAmount === "max") {
-    let count = 0, cost = 0;
-    while (count < 100000) {
-      const next = Math.ceil(c.baseCost * Math.pow(1.15, owned + count) * cm);
-      if (cost + next > state.credits) break;
-      cost += next; count++;
-    }
-    return { count, cost };
+    if (!isFinite(A) || state.credits < A) return { count: 0, cost: A };
+    // Geschlossene Form: größtes k mit A*(r^k-1)/(r-1) <= credits — keine Schleife
+    let k = Math.floor(Math.log(1 + state.credits * (r - 1) / A) / Math.log(r));
+    k = Math.max(0, Math.min(k, 5000));
+    let cost = Math.ceil(A * (Math.pow(r, k) - 1) / (r - 1));
+    while (k > 0 && (!isFinite(cost) || cost > state.credits)) { k--; cost = Math.ceil(A * (Math.pow(r, k) - 1) / (r - 1)); }
+    return { count: k, cost };
   }
   let cost = 0;
-  for (let k = 0; k < buyAmount; k++) cost += Math.ceil(c.baseCost * Math.pow(1.15, owned + k) * cm);
+  for (let i = 0; i < buyAmount; i++) cost += Math.ceil(A * Math.pow(r, i));
   return { count: buyAmount, cost };
 }
 
@@ -790,6 +796,12 @@ function load() {
     state.achievements = data.achievements || {};
     state.dienstmarken = data.dienstmarken || 0;
     state.prestiges = data.prestiges || 0;
+    // Reparatur überhöhter Altstände (alte exponentielle Marken-Formel)
+    const maxMarks = 100 + state.prestiges * 100;
+    if (state.dienstmarken > maxMarks) {
+      logMsg(`Hinweis: Veteranen-Marken auf ${fmt(maxMarks)} normalisiert (Balance-Fix).`, true);
+      state.dienstmarken = maxMarks;
+    }
     state.perks = data.perks || {};
     state.crewUpgrades = data.crewUpgrades || {};
     state.buffs = [];                          // temporäre Buffs laufen beim Schließen aus
