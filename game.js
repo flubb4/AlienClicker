@@ -41,19 +41,51 @@ const MODULES = [
   { id: "ai",      name: "KI-Automatisierung",  cost: 7e8,   mult: 4, icon: "🛰️", desc: "Vollautomatische Eingabe. x4." },
 ];
 
-const SAVE_KEY = "dragonsdebt-save-v1";
+const SAVE_KEY = "dragonsdebt-save-v2";
 const BASE_CLICK = 1;
-const DEBT_TOTAL = 1e8; // Gesamtschuld in Credits, die getilgt werden muss
+const DEBT_BASE = 1e8;        // Schuld des ersten Vertrags
+const DEBT_GROWTH = 8;        // Schuld ×8 pro weiterem Vertrag
+const CREW_MILESTONES = [10, 25, 50, 100, 150, 200]; // Output-Verdopplung je Stückzahl
+const ACH_BONUS = 0.02;       // +2% globale Produktion je Erfolg
+const TOKEN_BONUS = 0.05;     // +5% globale Produktion je Dienstmarke
+
+// Erfolge: cond() wird zur Laufzeit geprüft.
+const ACHIEVEMENTS = [
+  { id: "firstclick", name: "Erster Handgriff",       desc: "Bediene das Terminal.",                cond: () => state.totalClicks >= 1 },
+  { id: "click100",   name: "Fleißig",                desc: "100 Terminal-Klicks.",                 cond: () => state.totalClicks >= 100 },
+  { id: "click1k",    name: "Akkordarbeit",           desc: "1.000 Terminal-Klicks.",               cond: () => state.totalClicks >= 1000 },
+  { id: "firsthire",  name: "Nicht mehr allein",      desc: "Heuere dein erstes Crewmitglied an.",  cond: () => crewAboard() >= 1 },
+  { id: "fullcrew",   name: "Volle Besatzung",        desc: "Alle 6 Crewmitglieder an Bord.",       cond: () => crewAboard() >= CREW.length },
+  { id: "cred1k",     name: "Erste Rate",             desc: "Verdiene 1.000 Credits.",              cond: () => state.totalEarned >= 1e3 },
+  { id: "cred1m",     name: "Liquide",                desc: "Verdiene 1 Mio Credits.",              cond: () => state.totalEarned >= 1e6 },
+  { id: "cred1b",     name: "Reich",                  desc: "Verdiene 1 Mrd Credits.",              cond: () => state.totalEarned >= 1e9 },
+  { id: "cred1t",     name: "Dagobert",               desc: "Verdiene 1 Bio Credits.",              cond: () => state.totalEarned >= 1e12 },
+  { id: "sysall",     name: "Voll aufgerüstet",       desc: "Installiere alle Systeme.",            cond: () => MODULES.every(m => state.modules[m.id]) },
+  { id: "crew10",     name: "Schichtbetrieb",         desc: "Habe 10× ein Crewmitglied.",           cond: () => CREW.some(c => state.crew[c.id] >= 10) },
+  { id: "crew50",     name: "Überbesetzt",            desc: "Habe 50× ein Crewmitglied.",           cond: () => CREW.some(c => state.crew[c.id] >= 50) },
+  { id: "crew100",    name: "Klon-Verdacht",          desc: "Habe 100× ein Crewmitglied.",          cond: () => CREW.some(c => state.crew[c.id] >= 100) },
+  { id: "rate1k",     name: "Selbstläufer",           desc: "Erreiche 1.000 cr/s.",                 cond: () => perSecond() >= 1e3 },
+  { id: "rate1m",     name: "Industrie",              desc: "Erreiche 1 Mio cr/s.",                 cond: () => perSecond() >= 1e6 },
+  { id: "debthalf",   name: "Halb frei",              desc: "Tilge 50 % eines Vertrags.",           cond: () => state.contractEarned >= currentDebt() * 0.5 },
+  { id: "cryo",       name: "Cryo-Schlaf",            desc: "Kehre aus dem Offline-Ertrag zurück.", cond: () => !!state._cryo },
+  { id: "prestige1",  name: "Neuer Vertrag",          desc: "Unterschreibe einen neuen Vertrag.",   cond: () => state.prestiges >= 1 },
+  { id: "prestige3",  name: "Veteran",                desc: "Schließe 3 Verträge ab.",              cond: () => state.prestiges >= 3 },
+  { id: "prestige5",  name: "Legende der Reederei",   desc: "Schließe 5 Verträge ab.",              cond: () => state.prestiges >= 5 },
+];
 
 /* ---------- Spielzustand ---------- */
 
 let state = {
   credits: 0,
-  totalEarned: 0,
+  totalEarned: 0,      // lebenslang (Erfolge / Statistik)
+  contractEarned: 0,   // seit letztem Vertrag (Schulden-Balken)
   totalClicks: 0,
   startTime: Date.now(),
-  crew: {},     // id -> Anzahl
-  modules: {},  // id -> true
+  crew: {},            // id -> Anzahl
+  modules: {},         // id -> true
+  achievements: {},    // id -> true
+  dienstmarken: 0,     // Prestige-Währung (permanenter Bonus)
+  prestiges: 0,        // abgeschlossene Verträge
 };
 CREW.forEach(c => (state.crew[c.id] = 0));
 
@@ -71,15 +103,27 @@ function fmt(n) {
 function crewCost(c) {
   return Math.ceil(c.baseCost * Math.pow(1.15, state.crew[c.id]));
 }
+function crewAboard() { return CREW.reduce((s, c) => s + (state.crew[c.id] > 0 ? 1 : 0), 0); }
+function achCount() { return Object.keys(state.achievements).length; }
+// Globaler Produktions-Multiplikator aus Erfolgen + Dienstmarken
+function globalMult() { return (1 + ACH_BONUS * achCount()) * (1 + TOKEN_BONUS * state.dienstmarken); }
+// Output-Multiplikator eines Crewmitglieds durch Stückzahl-Meilensteine
+function crewMult(id) { let m = 1; for (const t of CREW_MILESTONES) if (state.crew[id] >= t) m *= 2; return m; }
+function nextCrewMilestone(id) { const n = state.crew[id]; for (const t of CREW_MILESTONES) if (n < t) return t; return null; }
+
 function clickMultiplier() {
   let m = 1;
   MODULES.forEach(e => { if (state.modules[e.id]) m *= e.mult; });
   return m;
 }
-function clickPower() { return BASE_CLICK * clickMultiplier(); }
+function clickPower() { return BASE_CLICK * clickMultiplier() * globalMult(); }
 function perSecond() {
-  return CREW.reduce((sum, c) => sum + c.rate * state.crew[c.id], 0);
+  return CREW.reduce((sum, c) => sum + c.rate * state.crew[c.id] * crewMult(c.id), 0) * globalMult();
 }
+
+function currentDebt() { return DEBT_BASE * Math.pow(DEBT_GROWTH, state.prestiges); }
+function prestigeGain() { return Math.floor(Math.sqrt(state.contractEarned / 1e6)); }
+function canPrestige() { return state.contractEarned >= currentDebt(); }
 
 /* ---------- DOM-Referenzen ---------- */
 
@@ -89,6 +133,9 @@ const el = {
   deck: document.getElementById("deck"),
   crewList: document.getElementById("crewList"),
   moduleList: document.getElementById("moduleList"),
+  achList: document.getElementById("achList"),
+  contract: document.getElementById("contract"),
+  toasts: document.getElementById("toasts"),
   log: document.getElementById("log"),
   stats: document.getElementById("stats"),
   savedHint: document.getElementById("savedHint"),
@@ -142,6 +189,7 @@ el.deck.addEventListener("click", (ev) => {
   const gain = clickPower();
   state.credits += gain;
   state.totalEarned += gain;
+  state.contractEarned += gain;
   state.totalClicks++;
   spawnFloat(ev.clientX, ev.clientY, "+" + fmt(gain));
   term.classList.remove("ping"); void term.offsetWidth; term.classList.add("ping");
@@ -156,9 +204,11 @@ function buyCrew(c) {
   state.credits -= cost;
   state.crew[c.id]++;
   if (state.crew[c.id] === 1) logMsg(`${c.name} (${c.role}) angeheuert. An Bord.`, true);
+  if (CREW_MILESTONES.includes(state.crew[c.id])) logMsg(`Meilenstein: ${c.name} ×${state.crew[c.id]} — Output verdoppelt!`, true);
   renderDeck();
   renderShop();
   updateReadout();
+  checkAchievements();
 }
 
 function buyModule(e) {
@@ -168,6 +218,7 @@ function buyModule(e) {
   logMsg(`System installiert: ${e.name}.`);
   renderShop();
   updateReadout();
+  checkAchievements();
 }
 
 /* ---------- Deckplan (Räume + laufende Crew) ---------- */
@@ -223,11 +274,14 @@ function renderShop() {
     const affordable = state.credits >= cost;
     const item = document.createElement("div");
     item.className = "item" + (affordable ? "" : " locked");
+    const mult = crewMult(c.id);
+    const next = nextCrewMilestone(c.id);
     item.innerHTML = `
       <div class="thumb"><span class="thumb-fallback">${c.name[0]}</span><img src="assets/crew/${c.id}.png" alt="" onerror="this.remove()"></div>
       <div class="item-info">
-        <div class="item-name">${c.name}<span class="count">×${state.crew[c.id]}</span></div>
-        <div class="item-rate">${c.role} · +${fmt(c.rate)} cr/s</div>
+        <div class="item-name">${c.name}<span class="count">×${state.crew[c.id]}</span>${mult > 1 ? `<span class="ms-badge">×${mult}</span>` : ""}</div>
+        <div class="item-rate">${c.role} · +${fmt(c.rate * mult)} cr/s</div>
+        ${next ? `<div class="item-ms">Bonus bei ${next} · ${state.crew[c.id]}/${next}</div>` : `<div class="item-ms">max. Bonus erreicht</div>`}
       </div>
       <div class="item-cost"><span class="cost-val">${fmt(cost)}</span><span class="cost-lbl">CREDITS</span></div>
     `;
@@ -284,14 +338,14 @@ function renderStats() {
   const playMs = Date.now() - state.startTime;
   const mins = Math.floor(playMs / 60000);
   const playStr = mins < 60 ? `${mins} Min` : `${Math.floor(mins/60)} Std ${mins%60} Min`;
-  const crewAboard = CREW.reduce((s, c) => s + (state.crew[c.id] > 0 ? 1 : 0), 0);
-  const open = Math.max(0, DEBT_TOTAL - state.totalEarned);
+  const open = Math.max(0, currentDebt() - state.contractEarned);
   el.stats.innerHTML = `
     <div class="row"><span>Credits gesamt</span><b>${fmt(Math.floor(state.totalEarned))}</b></div>
     <div class="row"><span>Schuld offen</span><b>${fmt(Math.ceil(open))}</b></div>
     <div class="row"><span>Terminal-Klicks</span><b>${fmt(state.totalClicks)}</b></div>
-    <div class="row"><span>Crew an Bord</span><b>${crewAboard} / ${CREW.length}</b></div>
-    <div class="row"><span>Klick-Ertrag</span><b>×${fmt(clickMultiplier())}</b></div>
+    <div class="row"><span>Crew an Bord</span><b>${crewAboard()} / ${CREW.length}</b></div>
+    <div class="row"><span>Global-Bonus</span><b>×${globalMult().toFixed(2)}</b></div>
+    <div class="row"><span>Erfolge</span><b>${achCount()} / ${ACHIEVEMENTS.length}</b></div>
     <div class="row"><span>Dienstzeit</span><b>${playStr}</b></div>
   `;
 }
@@ -308,7 +362,7 @@ const DEBT_MILESTONES = [
 let lastMilestone = -1;
 
 function renderDebt() {
-  const pct = Math.min(100, (state.totalEarned / DEBT_TOTAL) * 100);
+  const pct = Math.min(100, (state.contractEarned / currentDebt()) * 100);
   el.debtStage.textContent = pct.toFixed(pct < 10 ? 1 : 0) + " %";
   el.debtFill.style.width = pct + "%";
   for (let i = 0; i < DEBT_MILESTONES.length; i++) {
@@ -320,6 +374,81 @@ function renderDebt() {
   }
 }
 
+/* ---------- Erfolge ---------- */
+
+function showToast(title, sub) {
+  if (!el.toasts) return;
+  const t = document.createElement("div");
+  t.className = "toast";
+  t.innerHTML = `<div class="toast-title">🏅 ERFOLG: ${title}</div><div class="toast-sub">${sub}</div>`;
+  el.toasts.appendChild(t);
+  setTimeout(() => t.classList.add("show"), 30);
+  setTimeout(() => { t.classList.remove("show"); setTimeout(() => t.remove(), 400); }, 4500);
+}
+
+function checkAchievements() {
+  let any = false;
+  ACHIEVEMENTS.forEach(a => {
+    if (!state.achievements[a.id] && a.cond()) {
+      state.achievements[a.id] = true;
+      any = true;
+      logMsg(`ERFOLG: ${a.name} (+${Math.round(ACH_BONUS * 100)}% Produktion)`, true);
+      showToast(a.name, a.desc);
+    }
+  });
+  if (any) { renderAchievements(); renderContract(); updateReadout(); }
+}
+
+function renderAchievements() {
+  if (!el.achList) return;
+  let html = `<div class="ach-head">${achCount()} / ${ACHIEVEMENTS.length} freigeschaltet · je +${Math.round(ACH_BONUS * 100)}% Produktion</div>`;
+  ACHIEVEMENTS.forEach(a => {
+    const got = !!state.achievements[a.id];
+    html += `<div class="ach${got ? " got" : ""}">
+      <div class="ach-icon">${got ? "🏅" : "🔒"}</div>
+      <div class="ach-info"><div class="ach-name">${got ? a.name : "???"}</div><div class="ach-desc">${a.desc}</div></div>
+    </div>`;
+  });
+  el.achList.innerHTML = html;
+}
+
+/* ---------- Vertrag / Prestige ---------- */
+
+function renderContract() {
+  if (!el.contract) return;
+  const gain = prestigeGain();
+  const ready = canPrestige();
+  el.contract.innerHTML = `
+    <div class="row"><span>Vertrag</span><b>#${state.prestiges + 1}</b></div>
+    <div class="row"><span>Dienstmarken</span><b>${fmt(state.dienstmarken)}</b></div>
+    <div class="row"><span>Veteranen-Bonus</span><b>+${Math.round(TOKEN_BONUS * state.dienstmarken * 100)}%</b></div>
+    <button class="contract-btn${ready ? " ready" : ""}" id="prestigeBtn"${ready ? "" : " disabled"}>
+      ${ready ? `Neuer Vertrag · +${gain} Marken` : "Schuld tilgen für neuen Vertrag"}
+    </button>
+  `;
+  const btn = document.getElementById("prestigeBtn");
+  if (btn) btn.addEventListener("click", doPrestige);
+}
+
+function doPrestige() {
+  if (!canPrestige()) return;
+  const gain = prestigeGain();
+  if (gain < 1) return;
+  if (!confirm(`Neuen Vertrag unterschreiben?\n\nDu erhältst ${gain} Dienstmarken (+${gain * Math.round(TOKEN_BONUS * 100)}% permanente Produktion).\nCredits, Crew und Systeme werden zurückgesetzt. Erfolge & Dienstmarken bleiben.`)) return;
+  state.dienstmarken += gain;
+  state.prestiges++;
+  state.credits = 0;
+  state.contractEarned = 0;
+  CREW.forEach(c => (state.crew[c.id] = 0));
+  state.modules = {};
+  lastMilestone = -1;
+  lastShopSignature = "";
+  logMsg(`NEUER VERTRAG #${state.prestiges + 1}. +${gain} Dienstmarken. Neue Schuld: ${fmt(currentDebt())} cr.`, true);
+  el.stageFlash.classList.remove("on"); void el.stageFlash.offsetWidth; el.stageFlash.classList.add("on");
+  renderDeck(); renderShop(); renderContract(); renderDebt(); updateReadout();
+  saveWithStamp(false);
+}
+
 /* ---------- Game-Loop ---------- */
 
 let lastTick = Date.now();
@@ -328,12 +457,14 @@ function tick() {
   const dt = (now - lastTick) / 1000;
   lastTick = now;
   const gain = perSecond() * dt;
-  if (gain > 0) { state.credits += gain; state.totalEarned += gain; }
+  if (gain > 0) { state.credits += gain; state.totalEarned += gain; state.contractEarned += gain; }
   updateReadout();
 }
 setInterval(tick, 100);
 setInterval(renderStats, 500);
 setInterval(renderDebt, 500);
+setInterval(renderContract, 700);
+setInterval(checkAchievements, 1000);
 
 setInterval(() => {
   const m = LOG_FLAVOR[logCount % LOG_FLAVOR.length];
@@ -360,17 +491,22 @@ function load() {
     const data = JSON.parse(raw);
     state.credits = data.credits || 0;
     state.totalEarned = data.totalEarned || 0;
+    state.contractEarned = data.contractEarned || 0;
     state.totalClicks = data.totalClicks || 0;
     state.startTime = data.startTime || Date.now();
     CREW.forEach(c => (state.crew[c.id] = (data.crew && data.crew[c.id]) || 0));
     state.modules = data.modules || {};
+    state.achievements = data.achievements || {};
+    state.dienstmarken = data.dienstmarken || 0;
+    state.prestiges = data.prestiges || 0;
 
     const offlineMs = Date.now() - (data._savedAt || Date.now());
     if (offlineMs > 10000) {
       const cappedSec = Math.min(offlineMs / 1000, 8 * 3600);
       const earned = perSecond() * cappedSec * 0.5;
       if (earned > 0) {
-        state.credits += earned; state.totalEarned += earned;
+        state.credits += earned; state.totalEarned += earned; state.contractEarned += earned;
+        state._cryo = true;
         logMsg(`Rückkehr aus dem Cryo-Schlaf. Crew erwirtschaftete ${fmt(Math.floor(earned))} Credits.`, true);
       }
     }
@@ -382,11 +518,11 @@ document.getElementById("saveBtn").addEventListener("click", () => save(true));
 document.getElementById("resetBtn").addEventListener("click", () => {
   if (!confirm("RESET: Logbuch und Fortschritt unwiderruflich löschen?")) return;
   localStorage.removeItem(SAVE_KEY);
-  state = { credits: 0, totalEarned: 0, totalClicks: 0, startTime: Date.now(), crew: {}, modules: {} };
+  state = { credits: 0, totalEarned: 0, contractEarned: 0, totalClicks: 0, startTime: Date.now(), crew: {}, modules: {}, achievements: {}, dienstmarken: 0, prestiges: 0 };
   CREW.forEach(c => (state.crew[c.id] = 0));
   lastShopSignature = ""; lastMilestone = -1;
   logMsg("Schiffssysteme zurückgesetzt.", true);
-  renderDeck(); renderShop(); updateReadout();
+  renderDeck(); renderShop(); renderAchievements(); renderContract(); renderDebt(); updateReadout();
 });
 
 function saveWithStamp(showHint) { state._savedAt = Date.now(); save(showHint); }
@@ -394,13 +530,14 @@ setInterval(() => saveWithStamp(false), 15000);
 window.addEventListener("beforeunload", () => saveWithStamp(false));
 
 // Tab-Umschaltung
+const TAB_BODIES = { crew: el.crewList, modules: el.moduleList, ach: el.achList };
 document.querySelectorAll(".tab").forEach(tab => {
   tab.addEventListener("click", () => {
     document.querySelectorAll(".tab").forEach(t => t.classList.remove("active"));
     tab.classList.add("active");
     const which = tab.dataset.tab;
-    el.crewList.classList.toggle("hidden", which !== "crew");
-    el.moduleList.classList.toggle("hidden", which !== "modules");
+    Object.entries(TAB_BODIES).forEach(([k, node]) => { if (node) node.classList.toggle("hidden", k !== which); });
+    if (which === "ach") renderAchievements();
   });
 });
 
@@ -433,18 +570,20 @@ function setupAdmin() {
 
   panel.addEventListener("click", (e) => {
     const add = e.target.dataset && e.target.dataset.add;
-    if (add) { state.credits += Number(add); updateReadout(); }
+    if (add) { state.credits += Number(add); updateReadout(); checkAchievements(); }
   });
   panel.querySelector("#admCrew").addEventListener("click", () => {
     CREW.forEach(c => state.crew[c.id] += 5);
-    renderDeck(); renderShop(); updateReadout();
+    renderDeck(); renderShop(); updateReadout(); checkAchievements();
   });
   panel.querySelector("#admModules").addEventListener("click", () => {
     MODULES.forEach(m => state.modules[m.id] = true);
-    renderShop(); updateReadout();
+    renderShop(); updateReadout(); checkAchievements();
   });
   panel.querySelector("#admDebt").addEventListener("click", () => {
-    state.totalEarned += DEBT_TOTAL * 0.1; updateReadout(); renderDebt();
+    const d = currentDebt() * 0.1;
+    state.totalEarned += d; state.contractEarned += d;
+    updateReadout(); renderDebt(); renderContract(); checkAchievements();
   });
 
   window.addEventListener("keydown", (e) => {
@@ -461,10 +600,13 @@ setupAdmin();
 
 const loaded = load();
 logMsg("DRAGON'S DEBT — Bordsysteme hochgefahren.");
-logMsg(loaded ? "Logbuch wiederhergestellt." : "Neue Schicht. Schulden offen: " + fmt(DEBT_TOTAL) + " Credits.");
+logMsg(loaded ? "Logbuch wiederhergestellt." : "Neue Schicht. Schuld offen: " + fmt(currentDebt()) + " Credits.");
 renderDeck();
 renderShop();
 lastShopSignature = CREW.map(c => state.crew[c.id]).join(",") + "|" + MODULES.map(e => state.modules[e.id] ? 1 : 0).join(",");
 updateReadout();
 renderStats();
 renderDebt();
+renderAchievements();
+renderContract();
+checkAchievements();

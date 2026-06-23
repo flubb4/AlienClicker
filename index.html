@@ -45,6 +45,8 @@
     <div class="log" id="log"></div>
     <h2 class="panel-title">Status</h2>
     <div class="stats" id="stats"></div>
+    <h2 class="panel-title">Vertrag</h2>
+    <div class="contract" id="contract"></div>
     <div class="controls">
       <button class="ctl" id="saveBtn">Speichern</button>
       <button class="ctl danger" id="resetBtn">Reset</button>
@@ -66,10 +68,14 @@
     <div class="tabs">
       <button class="tab active" data-tab="crew">Crew</button>
       <button class="tab" data-tab="modules">Systeme</button>
+      <button class="tab" data-tab="ach">Erfolge</button>
     </div>
     <div class="tab-body" id="crewList"></div>
     <div class="tab-body hidden" id="moduleList"></div>
+    <div class="tab-body hidden" id="achList"></div>
   </aside>
+
+  <div class="toasts" id="toasts"></div>
 
   <script src="game.js"></script>
   <script src="ship.js"></script>
