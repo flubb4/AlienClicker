@@ -42,6 +42,9 @@ const MODULES = [
 ];
 
 const SAVE_KEY = "dragonsdebt-save-v2";
+// Globaler Reset-Hebel: Diese Zahl erhöhen und pushen -> ALLE Spielstände
+// werden beim nächsten Laden verworfen (frischer Start für jeden).
+const RESET_VERSION = 1;
 const BASE_CLICK = 1;
 const DEBT_BASE = 1e8;        // Schuld des ersten Vertrags
 const DEBT_GROWTH = 12;       // Schuld ×12 pro weiterem Vertrag (steiler -> bleibt fordernd)
@@ -773,6 +776,7 @@ setInterval(() => {
 
 function save(showHint = false) {
   try {
+    state._rv = RESET_VERSION;
     localStorage.setItem(SAVE_KEY, JSON.stringify(state));
     if (showHint) {
       el.savedHint.textContent = "// Logbuch gesichert.";
@@ -786,6 +790,8 @@ function load() {
     const raw = localStorage.getItem(SAVE_KEY);
     if (!raw) return false;
     const data = JSON.parse(raw);
+    // Globaler Reset: alte Save-Version -> verwerfen, frisch starten
+    if ((data._rv || 0) < RESET_VERSION) { localStorage.removeItem(SAVE_KEY); return false; }
     state.credits = data.credits || 0;
     state.totalEarned = data.totalEarned || 0;
     state.contractEarned = data.contractEarned || 0;
