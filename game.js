@@ -44,10 +44,10 @@ const MODULES = [
 const SAVE_KEY = "dragonsdebt-save-v2";
 const BASE_CLICK = 1;
 const DEBT_BASE = 1e8;        // Schuld des ersten Vertrags
-const DEBT_GROWTH = 8;        // Schuld ×8 pro weiterem Vertrag
+const DEBT_GROWTH = 12;       // Schuld ×12 pro weiterem Vertrag (steiler -> bleibt fordernd)
 const CREW_MILESTONES = [10, 25, 50, 100, 150, 200]; // Output-Verdopplung je Stückzahl
 const ACH_BONUS = 0.02;       // +2% globale Produktion je Erfolg
-const TOKEN_BONUS = 0.05;     // +5% globale Produktion je Dienstmarke
+const TOKEN_BONUS = 0.04;     // +4% globale Produktion je Dienstmarke
 
 // Erfolge: cond() wird zur Laufzeit geprüft.
 const ACHIEVEMENTS = [
@@ -202,7 +202,8 @@ function buyCrewUpgrade(crewId, u) {
 function buffMult() {
   const now = Date.now();
   if (state.buffs && state.buffs.length) state.buffs = state.buffs.filter(b => b.until > now);
-  let m = 1; (state.buffs || []).forEach(b => m *= b.mult); return m;
+  // Kein Stacking: nur der stärkste aktive Buff zählt.
+  let m = 1; (state.buffs || []).forEach(b => { if (b.mult > m) m = b.mult; }); return m;
 }
 function abilityReady(crewId) { return Date.now() >= (state.cooldowns[crewId] || 0); }
 function useAbility(crewId) {
@@ -791,7 +792,8 @@ function load() {
     state.prestiges = data.prestiges || 0;
     state.perks = data.perks || {};
     state.crewUpgrades = data.crewUpgrades || {};
-    state.buffs = []; state.cooldowns = {};
+    state.buffs = [];                          // temporäre Buffs laufen beim Schließen aus
+    state.cooldowns = data.cooldowns || {};    // Fähigkeiten-Cooldowns bleiben erhalten
 
     const offlineMs = Date.now() - (data._savedAt || Date.now());
     if (offlineMs > 10000) {
